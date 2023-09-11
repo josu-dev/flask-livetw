@@ -1,0 +1,16 @@
+# python
+*.pyc
+.venv/
+__pycache__/
+
+# pyenv
+.python-version
+
+# poetry
+dist/
+poetry.toml
+.pytest_cache/
+
+# others
+.env
+.dev-local

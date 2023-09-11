@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "flask-live-twcss"
+version = "0.1.2"
+description = "A simple package that enables live tailwindcss reloading for a template based app in flask"
+license = "MIT"
+authors = ["J-Josu <josue.sa.trabajos@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/J-Josu/flask-live-twcss"
+keywords = ["flask", "tailwindcss", "live-reload", "css"]
+
+
+[tool.poetry.scripts]
+flask-live-twcss = "flask_live_twcss.main:main"
+
+
+[tool.poetry.dependencies]
+python = "^3.8.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
