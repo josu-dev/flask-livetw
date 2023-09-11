@@ -1,16 +1,16 @@
 [tool.poetry]
-name = "flask-live-twcss"
-version = "0.1.2"
+name = "flask-livetw"
+version = "0.1.0"
 description = "A simple package that enables live tailwindcss reloading for a template based app in flask"
 license = "MIT"
 authors = ["J-Josu <josue.sa.trabajos@gmail.com>"]
 readme = "README.md"
-repository = "https://github.com/J-Josu/flask-live-twcss"
-keywords = ["flask", "tailwindcss", "live-reload", "css"]
+repository = "https://github.com/J-Josu/flask-livetw"
+keywords = ["flask", "tailwindcss", "live-reload", "css", "html", "template"]
 
 
 [tool.poetry.scripts]
-flask-live-twcss = "flask_live_twcss.main:main"
+flask-livetw = "flask_livetw.main:main"
 
 
 [tool.poetry.dependencies]
