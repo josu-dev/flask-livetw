@@ -1,4 +1,4 @@
-from flask_live_twcss.main import main
+from flask_livetw.main import main
 
 
 if __name__ == '__main__':

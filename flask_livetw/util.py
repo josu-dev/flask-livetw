@@ -1,6 +1,7 @@
-import platform
-import os
 import dataclasses
+import os
+import platform
+from typing import Callable, Union
 
 
 STATIC_PATH = os.path.join(
@@ -38,19 +39,19 @@ class Term:
     BOLD = "\033[1m"
 
     @staticmethod
-    def dev(*values: object, end: str = '\n', sep: str = ' '):
+    def dev(*values: object, end: str = '\n', sep: str = ' ') -> None:
         print(f'{Term.M}[dev]{Term.END}', *values, end=end, sep=sep)
 
     @staticmethod
-    def info(*values: object, end: str = '\n', sep: str = ' '):
+    def info(*values: object, end: str = '\n', sep: str = ' ') -> None:
         print(f'{Term.C}[info]{Term.END}', *values, end=end, sep=sep)
 
     @staticmethod
-    def warn(*values: object, end: str = '\n', sep: str = ' '):
+    def warn(*values: object, end: str = '\n', sep: str = ' ') -> None:
         print(f'{Term.Y}[warn]{Term.END}', *values, end=end, sep=sep)
 
     @staticmethod
-    def error(*values: object, end: str = '\n', sep: str = ' '):
+    def error(*values: object, end: str = '\n', sep: str = ' ') -> None:
         print(f'{Term.R}[error]{Term.END}', *values, end=end, sep=sep)
 
     @staticmethod
@@ -67,26 +68,44 @@ class Term:
                 f'{Term.C}{message}{Term.END} [y/N] ').strip().lower()
 
     @staticmethod
-    def ask_fs_entry(message: str, entry_type: str = 'file'):
-        if entry_type not in ('file', 'dir'):
-            raise ValueError(f'Invalid entry type: {entry_type}')
+    def ask(message: str, validator: Union[None, Callable[[str], bool]] = None) -> str:
+        while True:
+            response = input(message).strip()
+            if not validator or validator(response):
+                return response
 
-        response = input(f'{Term.C}{message}{Term.END} ').strip()
+            Term.info(f'Invalid response: {response}')
+
+    @staticmethod
+    def ask_file(message: str, base_dir: Union[str, None] = None) -> str:
+        file = input(message).strip()
 
         while True:
-            if not response:
-                print(f'{Term.R}Invalid response{Term.END}')
-                response = input(f'{Term.C}{message}{Term.END} ').strip()
+            if not file:
+                print(f'Please enter a non-empty file path')
+                file = input(message).strip()
                 continue
 
-            if entry_type == 'file':
-                if os.path.isfile(response):
-                    return response
-                print(f'{Term.R}File not found{Term.END}')
-                response = input(f'{Term.C}{message}{Term.END} ').strip()
+            full_path = f'{base_dir}/{file}' if base_dir else file
+            if os.path.isfile(full_path):
+                return file
+
+            Term.error(f'File not found: {full_path}')
+            file = input(message).strip()
+
+    @staticmethod
+    def ask_dir(message: str, base_dir: Union[str, None] = None) -> str:
+        dir = input(message).strip()
+
+        while True:
+            if not dir:
+                print(f'Please enter a non-empty dir path')
+                dir = input(message).strip()
                 continue
 
-            if os.path.isdir(response):
-                return response
-            print(f'{Term.R}Directory not found{Term.END}')
-            response = input(f'{Term.C}{message}{Term.END} ').strip()
+            full_path = f'{base_dir}/{dir}' if base_dir else dir
+            if os.path.isdir(full_path):
+                return dir
+
+            Term.error(f'\'{full_path}\' is not a dir')
+            dir = input(message).strip()

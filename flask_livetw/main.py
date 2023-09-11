@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+import os
 import shlex
 import subprocess
-import os
-from .util import Term, load_resource
-from .cli import create_cli
+
+from flask_livetw import cli
+from flask_livetw.util import Term, load_resource
 
 
 DEV_DEPENDENCIES = 'pytailwindcss websockets python-dotenv'
@@ -42,7 +43,7 @@ def generate_live_reload_template(live_reload_file: str, twcss_file: str, minifi
   {% else %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename=\'''' + minified_twcss_file + '''\') }}">
   {% endif %}
-''').strip()
+''').strip('\n')
 
 
 def generate_layout_template(live_reload_file: str, twcss_file: str, minified_twcss_file: str) -> str:
@@ -51,39 +52,6 @@ def generate_layout_template(live_reload_file: str, twcss_file: str, minified_tw
         generate_live_reload_template(
             live_reload_file, twcss_file, minified_twcss_file)
     )
-
-
-def check_installation_requirements(all_yes: bool = False) -> int:
-    if all_yes:
-        return 0
-
-    cwd = os.getcwd()
-    print(
-        f'The modding will continue on the current working directory:\n> {Term.BOLD}{cwd}{Term.END} ')
-    continue_install = Term.confirm("Continue?")
-
-    if not continue_install:
-        Term.dev("modding canceled")
-        return 1
-
-    python_cmd = shlex.split("python --version")
-    python_cmd_result = subprocess.run(
-        python_cmd, shell=True, check=True, capture_output=True
-    )
-
-    if python_cmd_result.returncode != 0:
-        Term.error('python --version failed, terminating script')
-        return python_cmd_result.returncode
-
-    version = python_cmd_result.stdout.decode('utf-8')
-    if version != 'Python 3.8.10':
-        Term.warn("Current python version is 3.8.10")
-        continue_install = Term.confirm("Continue?")
-        if not continue_install:
-            Term.dev("modding canceled")
-            return 1
-
-    return 0
 
 
 def install_dev_dependencies() -> None:
@@ -144,15 +112,17 @@ def generate_files(live_reload_file: str, twcss_file: str, minified_twcss_file: 
             f.write(LIVE_RELOAD_SCRIPT.content)
 
 
-def update_layout(root_layout_template: str, live_reload_file: str, twcss_file: str, minified_twcss_file: str) -> None:
+def update_layout(root_layout_template: str, live_reload_file: str, twcss_file: str, minified_twcss_file: str) -> int:
     root_layout = root_layout_template
 
     try:
         with open(root_layout, '+r') as f:
             layout = f.read()
             if '</head>' not in layout:
-                print("Error: </head> tag not found in src/web/templates/layout.html")
-                exit(1)
+                Term.error(
+                    'Root layour is malformed, the </head> tag is missing. Please check your root layout file.')
+                return 1
+
             layout = layout.replace(
                 '</head>',
                 generate_live_reload_template(
@@ -164,6 +134,7 @@ def update_layout(root_layout_template: str, live_reload_file: str, twcss_file: 
             f.seek(0)
             f.write(layout)
             f.truncate()
+            return 0
     except FileNotFoundError as e:
         Term.warn(e)
         os.makedirs(
@@ -176,6 +147,8 @@ def update_layout(root_layout_template: str, live_reload_file: str, twcss_file: 
                 twcss_file,
                 minified_twcss_file
             ))
+
+    return 0
 
 
 def update_gitignore(static_folder: str, twcss_file: str) -> None:
@@ -194,47 +167,40 @@ def update_gitignore(static_folder: str, twcss_file: str) -> None:
 
 
 def main() -> int:
-    cli_args = create_cli().parse_args()
+    cli_args = cli.create_cli().parse_args()
 
-    check_code = check_installation_requirements(cli_args.all_yes)
-    if check_code != 0:
-        return check_code
+    if not cli_args.all_yes:
+        code = cli.check_requirements()
+        if code != 0:
+            return code
 
-    project_root = cli_args.project_root
-    if project_root is None:
-        project_root = input('Enter project directory: ')
+    config = cli.get_config(cli_args)
 
-    static_folder = f'{project_root}/{cli_args.static_folder}'
-    templates_folder = f'{project_root}/{cli_args.templates_folder}'
-    root_layout_template = f'{templates_folder}/{cli_args.template_root_layout}'
-    live_reload_file = f'{static_folder}/{cli_args.live_reload_file}'
-    twcss_file = f'{static_folder}/{cli_args.twcss_file}'
-    minified_twcss_file = f'{static_folder}/{cli_args.minified_twcss_file}'
-    tw_content_glob = f'{project_root}/{cli_args.templates_folder}/{cli_args.templates_glob}'
-
-    Term.dev('Starting modding...')
+    Term.dev('Project modding started...')
 
     install_dev_dependencies()
 
-    init_tailwindcss(tw_content_glob)
+    init_tailwindcss(config.templates_glob)
 
     generate_files(
-        live_reload_file,
-        twcss_file,
-        minified_twcss_file
+        config.live_reload_file,
+        config.twcss_file,
+        config.minified_twcss_file
     )
 
-    update_layout(
-        root_layout_template,
-        cli_args.live_reload_file,
-        cli_args.twcss_file,
-        cli_args.minified_twcss_file
+    code = update_layout(
+        config.root_layout_file,
+        config.live_reload_file,
+        config.twcss_file,
+        config.minified_twcss_file
     )
+    if code != 0:
+        return code
 
-    if cli_args.gitignore:
+    if config.gitignore:
         update_gitignore(
-            static_folder,
-            cli_args.twcss_file
+            config.static_folder,
+            config.twcss_file
         )
 
     Term.dev(f'Modding complete ✅')
