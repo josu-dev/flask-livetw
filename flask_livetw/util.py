@@ -39,10 +39,6 @@ class Term:
     BOLD = "\033[1m"
 
     @staticmethod
-    def dev(*values: object, end: str = '\n', sep: str = ' ') -> None:
-        print(f'{Term.M}[dev]{Term.END}', *values, end=end, sep=sep)
-
-    @staticmethod
     def info(*values: object, end: str = '\n', sep: str = ' ') -> None:
         print(f'{Term.C}[info]{Term.END}', *values, end=end, sep=sep)
 
@@ -55,9 +51,13 @@ class Term:
         print(f'{Term.R}[error]{Term.END}', *values, end=end, sep=sep)
 
     @staticmethod
+    def blank(end: str = '\n') -> None:
+        print(end=end)
+
+    @staticmethod
     def confirm(message: str) -> bool:
         response = input(
-            f'{Term.C}{message}{Term.END} [y/N] ').strip().lower()
+            f'{message} [y/N] ').strip().lower()
         while True:
             if not response or response.startswith('n'):
                 return False
@@ -94,12 +94,20 @@ class Term:
             file = input(message).strip()
 
     @staticmethod
-    def ask_dir(message: str, base_dir: Union[str, None] = None) -> str:
+    def ask_dir(message: str, base_dir: Union[str, None] = None, default:Union[str,None]=None) -> str:
         dir = input(message).strip()
 
         while True:
-            if not dir:
+            if not default and not dir:
                 print(f'Please enter a non-empty dir path')
+                dir = input(message).strip()
+                continue
+
+            if not dir:
+                full_path = f'{base_dir}/{default}' if base_dir else default
+                if os.path.isdir(full_path):
+                    return default
+                Term.error(f'\'{full_path}\' is not a dir')
                 dir = input(message).strip()
                 continue
 

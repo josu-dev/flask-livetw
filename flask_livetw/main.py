@@ -4,7 +4,8 @@ import os
 import shlex
 import subprocess
 
-from flask_livetw import cli
+from flask_livetw.cli import \
+    create_cli, get_config, check_requirements, pkgprint
 from flask_livetw.util import Term, load_resource
 
 
@@ -54,45 +55,41 @@ def generate_layout_template(live_reload_file: str, twcss_file: str, minified_tw
     )
 
 
-def install_dev_dependencies() -> None:
-    Term.dev('Installing required dev dependencies...')
+def install_dev_dependencies() -> int:
+    Term.blank()
+    pkgprint('Installing required dev dependencies...')
 
     poetry_cmd = shlex.split(f"poetry add --group=dev {DEV_DEPENDENCIES}")
 
     try:
-        result = subprocess.run(poetry_cmd, shell=True, check=True)
+        _ = subprocess.run(poetry_cmd, shell=True, check=True)
     except subprocess.CalledProcessError as e:
         Term.error(e)
-        Term.info('Dev dependencies installation failed, terminating script')
-        exit(1)
+        Term.info('Dev dependencies installation failed, please install them manually')
+        return -1
 
-    if result.returncode != 0:
-        Term.info('Dev dependencies installation failed, terminating script')
-        exit(result.returncode)
-
-    Term.dev('Dev dependencies installation complete')
+    pkgprint('Dev dependencies installation complete')
+    return 0
 
 
-def init_tailwindcss(content_glob: str) -> None:
-    Term.dev('Initializing tailwindcss...')
+def init_tailwindcss(content_glob: str) -> int:
+    Term.blank()
+    pkgprint('Initializing tailwindcss...')
 
-    tailwind_init = "tailwindcss init"
+    tailwind_cmd = shlex.split('tailwindcss init')
 
     try:
-        result = subprocess.run(tailwind_init, shell=True, check=True)
+        _ = subprocess.run(tailwind_cmd, shell=True, check=True)
     except subprocess.CalledProcessError as e:
         Term.error(e)
         Term.info('Tailwindcss initialization failed, terminating script')
-        exit(1)
-
-    if result.returncode != 0:
-        Term.info('Tailwindcss initialization failed, terminating script')
-        exit(result.returncode)
+        return e.returncode
 
     with open('tailwind.config.js', 'w') as f:
         f.write(generate_tw_config(content_glob))
 
-    Term.dev('Tailwindcss initialization complete')
+    pkgprint('Tailwindcss initialization complete')
+    return 0
 
 
 def generate_files(live_reload_file: str, twcss_file: str, minified_twcss_file: str) -> None:
@@ -102,7 +99,6 @@ def generate_files(live_reload_file: str, twcss_file: str, minified_twcss_file: 
     try:
         with open(live_reload_file, 'w') as f:
             f.write(LIVE_RELOAD_SCRIPT.content)
-
     except FileNotFoundError:
         os.makedirs(
             os.path.dirname(live_reload_file),
@@ -112,11 +108,9 @@ def generate_files(live_reload_file: str, twcss_file: str, minified_twcss_file: 
             f.write(LIVE_RELOAD_SCRIPT.content)
 
 
-def update_layout(root_layout_template: str, live_reload_file: str, twcss_file: str, minified_twcss_file: str) -> int:
-    root_layout = root_layout_template
-
+def update_layout(root_layout_file: str, live_reload_file: str, twcss_file: str, minified_twcss_file: str) -> int:
     try:
-        with open(root_layout, '+r') as f:
+        with open(root_layout_file, '+r') as f:
             layout = f.read()
             if '</head>' not in layout:
                 Term.error(
@@ -138,10 +132,10 @@ def update_layout(root_layout_template: str, live_reload_file: str, twcss_file: 
     except FileNotFoundError as e:
         Term.warn(e)
         os.makedirs(
-            os.path.dirname(root_layout),
+            os.path.dirname(root_layout_file),
             exist_ok=True
         )
-        with open(root_layout, 'w') as f:
+        with open(root_layout_file, 'w') as f:
             f.write(generate_layout_template(
                 live_reload_file,
                 twcss_file,
@@ -153,10 +147,9 @@ def update_layout(root_layout_template: str, live_reload_file: str, twcss_file: 
 
 def update_gitignore(static_folder: str, twcss_file: str) -> None:
     content = f'''
-# flask-live-twcss
+# flask-livetw
 {static_folder}/{twcss_file}
 '''
-
     try:
         with open('.gitignore', 'a') as f:
             f.write(content)
@@ -167,29 +160,33 @@ def update_gitignore(static_folder: str, twcss_file: str) -> None:
 
 
 def main() -> int:
-    cli_args = cli.create_cli().parse_args()
+    cli_args = create_cli().parse_args()
 
     if not cli_args.all_yes:
-        code = cli.check_requirements()
+        code = check_requirements()
         if code != 0:
             return code
 
-    config = cli.get_config(cli_args)
+    config = get_config(cli_args)
 
-    Term.dev('Project modding started...')
+    pkgprint('Modding your project... 🚀')
 
-    install_dev_dependencies()
+    dependancies_code = install_dev_dependencies()
+    if dependancies_code > 0:
+        return dependancies_code
 
-    init_tailwindcss(config.templates_glob)
+    code = init_tailwindcss(config.full_templates_glob)
+    if code != 0:
+        return code
 
     generate_files(
-        config.live_reload_file,
-        config.twcss_file,
-        config.minified_twcss_file
+        config.full_live_reload_file,
+        config.full_twcss_file,
+        config.full_minified_twcss_file
     )
 
     code = update_layout(
-        config.root_layout_file,
+        config.full_root_layout_file,
         config.live_reload_file,
         config.twcss_file,
         config.minified_twcss_file
@@ -199,11 +196,19 @@ def main() -> int:
 
     if config.gitignore:
         update_gitignore(
-            config.static_folder,
+            config.full_static_folder,
             config.twcss_file
         )
 
-    Term.dev(f'Modding complete ✅')
+    Term.blank()
+
+    if dependancies_code == 0:
+        pkgprint(f'Modding complete ✅')
+    else:
+        pkgprint(f'Modding almost completed')
+        pkgprint('Remember to install the missing dev dependencies manually')
+        pkgprint(f'The required dependencies are: {DEV_DEPENDENCIES}')
+
     return 0
 
 
