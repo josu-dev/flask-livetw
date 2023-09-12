@@ -107,7 +107,8 @@ def check_requirements() -> int:
     if version != 'Python 3.8.10':
         pkgprint(f'python --version: {Term.C}{version}{Term.END}')
 
-        continue_install = Term.confirm(f'{PKG_PREFIX} Continue with this version?')
+        continue_install = Term.confirm(
+            f'{PKG_PREFIX} Continue with this version?')
         if not continue_install:
             pkgprint('Change python version and start again. Modding canceled')
             return 1

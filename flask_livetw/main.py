@@ -4,8 +4,8 @@ import os
 import shlex
 import subprocess
 
-from flask_livetw.cli import \
-    create_cli, get_config, check_requirements, pkgprint
+from flask_livetw.cli import (check_requirements, create_cli, get_config,
+                              pkgprint)
 from flask_livetw.util import Term, load_resource
 
 
@@ -65,7 +65,8 @@ def install_dev_dependencies() -> int:
         _ = subprocess.run(poetry_cmd, shell=True, check=True)
     except subprocess.CalledProcessError as e:
         Term.error(e)
-        Term.info('Dev dependencies installation failed, please install them manually')
+        Term.info(
+            'Dev dependencies installation failed, please install them manually')
         return -1
 
     pkgprint('Dev dependencies installation complete')

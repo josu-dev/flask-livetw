@@ -9,7 +9,7 @@ import os
 import platform
 import shlex
 import subprocess
-from typing import Union, Set
+from typing import Set, Union
 
 import dotenv
 import websockets.legacy.protocol as ws_protocol
@@ -42,7 +42,7 @@ def dev_print(*values: object):
     print(f'{Term.M}[dev]{Term.END}', *values)
 
 
-def int_or_default(value: Union[int, None], default: int) -> int:
+def int_or_default(value: Union[str, None], default: int) -> int:
     if value is None:
         return default
     try:

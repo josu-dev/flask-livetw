@@ -94,7 +94,7 @@ class Term:
             file = input(message).strip()
 
     @staticmethod
-    def ask_dir(message: str, base_dir: Union[str, None] = None, default:Union[str,None]=None) -> str:
+    def ask_dir(message: str, base_dir: Union[str, None] = None, default: Union[str, None] = None) -> str:
         dir = input(message).strip()
 
         while True:
@@ -103,8 +103,9 @@ class Term:
                 dir = input(message).strip()
                 continue
 
-            if not dir:
+            if default and not dir:
                 full_path = f'{base_dir}/{default}' if base_dir else default
+
                 if os.path.isdir(full_path):
                     return default
                 Term.error(f'\'{full_path}\' is not a dir')
