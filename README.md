@@ -118,8 +118,8 @@ project_root
 ```py
 LRWS_HOST = '127.0.0.1'
 LRWS_PORT = 5678
-TW_OUTPUT_PATH = '.dev/tailwindcss.css'
-TW_OUTPUT_PATH_BUILD = 'tailwindcss_min.css'
+TW_OUTPUT_PATH = 'src/static/.dev/tailwindcss.css'
+TW_OUTPUT_PATH_BUILD = 'src/static/tailwindcss_min.css'
 ```
 
 ## Contributing
