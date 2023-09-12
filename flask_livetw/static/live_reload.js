@@ -6,7 +6,6 @@ let LR_VERBOSE = true;
 /**
  * @param {'log'|'info'|'warn'|'error'} type
  * @param  {...any} args
- * @returns {void}
  */
 function lrLog(type, ...args) {
   if (!LR_VERBOSE) return;
@@ -29,8 +28,6 @@ let lrwsCloseTimeout;
 /**
  * @param {number=} code
  * @param {string=} reason
- * 
- * More: WebSocket error codes: https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4
  */
 function lrwsClose(code = 1000, reason = 'Live reload') {
   lrWebSocket?.close(code, reason);
@@ -48,13 +45,11 @@ function lrwsAutoReconnect() {
   }
 
   lrwsReconnectTimeoutCount++;
-  lrLog('info', `Trying to reconnect to ${WS_URL}... (${lrwsReconnectTimeoutCount})`);
+  lrLog('info', `Reconnecting to ${WS_URL} (${lrwsReconnectTimeoutCount})`);
   lrwsInit();
 }
 
 function lrwsCancelAutoReconnect() {
-  if (!lrwsCloseTimeout) return;
-
   clearTimeout(lrwsReconnectTimeout);
   lrwsReconnectTimeout = undefined;
 }
@@ -125,5 +120,6 @@ function lrwsInit() {
     lrwsClose()
   });
 }
+
 
 window.addEventListener('load', lrwsInit);
