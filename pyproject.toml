@@ -1,12 +1,22 @@
 [tool.poetry]
 name = "flask-livetw"
-version = "0.1.6"
+version = "0.1.7"
 description = "A simple package that enables live tailwindcss reloading for a template based app in flask"
 license = "MIT"
 authors = ["J-Josu <josue.sa.trabajos@gmail.com>"]
 readme = "README.md"
 repository = "https://github.com/J-Josu/flask-livetw"
 keywords = ["flask", "tailwindcss", "live-reload", "css", "html", "template"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Framework :: Flask",
+  "Intended Audience :: Developers",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
+]
 
 
 [tool.poetry.scripts]

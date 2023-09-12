@@ -9,7 +9,7 @@ from flask_livetw.cli import (check_requirements, create_cli, get_config,
 from flask_livetw.util import Term, load_resource
 
 
-DEV_DEPENDENCIES = 'pytailwindcss websockets python-dotenv'
+DEV_DEPENDENCIES = 'pytailwindcss python-dotenv websockets'
 
 
 LIVE_RELOAD_SCRIPT = load_resource('live_reload.js')
