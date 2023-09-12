@@ -53,27 +53,28 @@ class Config:
 def create_cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Mods a Flask app to use TailwindCSS in a dev server like manner.',
-        allow_abbrev=True
+        allow_abbrev=True,
+        formatter_class=argparse.MetavarTypeHelpFormatter
     )
 
     parser.add_argument(
         '-Y', '--yes', dest='all_yes', action='store_true', default=False,
-        help='Answer yes to all requirements checks.'
+        help='answer yes to all requirements checks'
     )
 
     parser.add_argument(
         '-D', '--default', dest='default', action='store_true', default=False,
-        help='Use default values for all options.'
+        help='use default values for all options'
     )
 
     parser.add_argument(
         '--gi', '--gitignore', dest='gitignore', action='store_true', default=DEFAULT_UPDATE_GITIGNORE,
-        help=f'Update .gitignore to exclude dev related files. Default: {DEFAULT_UPDATE_GITIGNORE}'
+        help=f'update .gitignore to exclude dev related files (default: {DEFAULT_UPDATE_GITIGNORE})'
     )
 
     parser.add_argument(
         '--fr', '--flask-root', dest='flask_root', type=str,
-        help=f'Flask app root path (relative to cwd).'
+        help=f'flask app root path (relative to cwd)'
     )
 
     return parser

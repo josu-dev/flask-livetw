@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
-import websockets.server as ws_server
-import websockets.legacy.protocol as ws_protocol
+import argparse
 import asyncio
+import concurrent.futures
 import datetime
 import json
-import subprocess
 import os
-import dotenv
-import concurrent.futures
 import platform
-import argparse
 import shlex
+import subprocess
+from typing import Union, Set
+
+import dotenv
+import websockets.legacy.protocol as ws_protocol
+import websockets.server as ws_server
 
 
 # docs:
@@ -40,7 +42,7 @@ def dev_print(*values: object):
     print(f'{Term.M}[dev]{Term.END}', *values)
 
 
-def int_or_default(value: 'str|None', default: int) -> int:
+def int_or_default(value: Union[int, None], default: int) -> int:
     if value is None:
         return default
     try:
@@ -62,7 +64,7 @@ TW_OUTPUT_PATH_BUILD = os.getenv(
 )
 
 
-LR_CONNECTIONS: 'set[ws_server.WebSocketServerProtocol]' = set()
+LR_CONNECTIONS: Set[ws_server.WebSocketServerProtocol] = set()
 
 
 async def handle_connection(websocket: ws_server.WebSocketServerProtocol):
@@ -229,7 +231,7 @@ def main():
 def cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Enhanced dev environment for flask apps.',
-        allow_abbrev=True
+        allow_abbrev=True,
     )
 
     subparsers = parser.add_subparsers(
@@ -242,7 +244,8 @@ def cli() -> argparse.ArgumentParser:
         name='build',
         description='Build the tailwindcss of the provided input as a single css file.',
         help='Build tailwindcss for production.',
-        allow_abbrev=True
+        allow_abbrev=True,
+        formatter_class=argparse.MetavarTypeHelpFormatter,
     )
     parser_build.add_argument(
         '-i', '--input', dest='input', type=str,
@@ -265,12 +268,14 @@ def cli() -> argparse.ArgumentParser:
 
     parser_dev = subparsers.add_parser(
         name='dev',
-        description='''\
-Extended dev mode for flask apps.
-By default runs the flask app in debug mode,
-tailwindcss in watch mode and live reload server.''',
+        description='''
+            Extended dev mode for flask apps.
+            By default runs the flask app in debug mode,
+            tailwindcss in watch mode and live reload server.
+        ''',
         help='Run a development server.',
-        allow_abbrev=True
+        allow_abbrev=True,
+        formatter_class=argparse.MetavarTypeHelpFormatter,
     )
     parser_dev.add_argument(
         '--no-live-reload', dest='no_live_reload', action='store_true', default=False,

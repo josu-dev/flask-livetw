@@ -1,6 +1,7 @@
 {
   "[python]": {
-    "editor.defaultFormatter": "ms-python.autopep8"
+    "editor.defaultFormatter": "ms-python.autopep8",
+    "editor.tabSize": 4
   },
   "python.analysis.typeCheckingMode": "strict",
   "files.trimFinalNewlines": true,
