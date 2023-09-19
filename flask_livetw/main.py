@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import re
 import shlex
 import subprocess
 
@@ -11,7 +12,6 @@ from flask_livetw.cli import (
     pkgprint,
 )
 from flask_livetw.util import Term, load_resource
-
 
 DEV_DEPENDENCIES = "pytailwindcss python-dotenv websockets"
 
@@ -88,27 +88,64 @@ def install_dev_dependencies() -> int:
         )
         return -1
 
-    pkgprint("Dev dependencies installation complete")
+    pkgprint("Dev dependencies installed")
     return 0
 
 
-def init_tailwindcss(content_glob: str) -> int:
+def configure_tailwind(content_glob: str) -> int:
     Term.blank()
-    pkgprint("Initializing tailwindcss...")
+    pkgprint("Configuring tailwindcss...")
 
-    tailwind_cmd = shlex.split("tailwindcss init")
+    if os.path.exists(TAILWIND_CONFIG.name):
+        Term.info("Detected existing configuration file")
+        Term.info("Updating tailwindcss configuration file...")
 
-    try:
-        _ = subprocess.run(tailwind_cmd, shell=True, check=True)
-    except subprocess.CalledProcessError as e:
-        Term.error(e)
-        Term.info("Tailwindcss initialization failed, terminating script")
-        return e.returncode
+        with open(TAILWIND_CONFIG.name, "r+t") as f:
+            config = f.read()
+            content_glob_re = re.compile(r"content:\s*\[([^\]]*)\]")
+            re_match = content_glob_re.search(config)
+            if re_match is None:
+                Term.info(
+                    "No content config found in existing tailwind.config.js"
+                )
+                Term.info("Add the following glob to the content config:")
+                Term.info(f"'{content_glob}',")
+                return -1
 
-    with open("tailwind.config.js", "w") as f:
+            existing_globs = re_match.group(1)
+            content_start, content_end = re_match.span(1)
+            prev = config[:content_start]
+            next = config[content_end:]
+            if existing_globs.strip() == "":
+                new_globs = f"'{content_glob}',"
+            else:
+                no_new_line = existing_globs.lstrip("\n")
+                space = " " * (len(no_new_line) - len(no_new_line.lstrip()))
+                existing_globs = no_new_line.rstrip(", \t\n")
+                if space == "":
+                    new_globs = (
+                        f"\n    {existing_globs},\n    '{content_glob}',\n  "
+                    )
+                else:
+                    new_globs = (
+                        f"\n{existing_globs},\n{space}'{content_glob}',\n  "
+                    )
+
+            config = f"{prev}{new_globs}{next}"
+            config = config.rstrip() + "\n"
+            f.seek(0)
+            f.write(config)
+            f.truncate()
+
+        Term.info("Tailwindcss configuration file updated")
+        pkgprint("Tailwindcss configured")
+        return 0
+
+    with open(TAILWIND_CONFIG.name, "w") as f:
         f.write(generate_tw_config(content_glob))
 
-    pkgprint("Tailwindcss initialization complete")
+    Term.info("Tailwindcss configuration file created")
+    pkgprint("Tailwindcss configuration complete")
     return 0
 
 
@@ -207,9 +244,9 @@ def main() -> int:
     if dependancies_code > 0:
         return dependancies_code
 
-    code = init_tailwindcss(config.full_templates_glob)
-    if code != 0:
-        return code
+    tailwind_code = configure_tailwind(config.full_templates_glob)
+    if tailwind_code > 0:
+        return tailwind_code
 
     generate_files(
         config.full_live_reload_file,
@@ -232,12 +269,21 @@ def main() -> int:
 
     Term.blank()
 
-    if dependancies_code == 0:
+    if dependancies_code == 0 and tailwind_code == 0:
         pkgprint("Modding complete ✅")
-    else:
-        pkgprint("Modding almost completed")
+        return 0
+
+    pkgprint("Modding almost completed")
+
+    if dependancies_code != 0:
         pkgprint("Remember to install the missing dev dependencies manually")
-        pkgprint(f"The required dependencies are: {DEV_DEPENDENCIES}")
+        pkgprint(f"Dependancies: {DEV_DEPENDENCIES}")
+
+    if tailwind_code != 0:
+        pkgprint(
+            "Remember to add the content glob to your tailwind.config.js manually"
+        )
+        pkgprint(f"Glob: '{config.full_templates_glob}'")
 
     return 0
 

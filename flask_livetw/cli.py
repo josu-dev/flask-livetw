@@ -7,7 +7,6 @@ from typing import Union
 
 from flask_livetw.util import Term
 
-
 DEFAULT_FLASK_ROOT = "src"
 
 DEFAULT_STATIC_FOLDER = "static"
@@ -55,7 +54,7 @@ class Config:
 
 def create_cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Mods a Flask app to use TailwindCSS in a dev server like manner.",  # noqa: E501
+        description="Mods a Flask app to use TailwindCSS in a dev server like manner.",
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )
@@ -84,7 +83,7 @@ def create_cli() -> argparse.ArgumentParser:
         dest="gitignore",
         action="store_true",
         default=DEFAULT_UPDATE_GITIGNORE,
-        help=f"update .gitignore to exclude dev related files (default: {DEFAULT_UPDATE_GITIGNORE})",  # noqa: E501
+        help=f"update .gitignore to exclude dev related files (default: {DEFAULT_UPDATE_GITIGNORE})",
     )
 
     parser.add_argument(
@@ -143,19 +142,19 @@ def get_config(args: argparse.Namespace) -> Config:
             static_folder=DEFAULT_STATIC_FOLDER,
             full_static_folder=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}",
             templates_folder=DEFAULT_TEMPLATE_FOLDER,
-            full_templates_folder=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}",  # noqa: E501
+            full_templates_folder=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}",
             templates_glob=DEFAULT_TEMPLATE_GLOB,
-            full_templates_glob=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}/{DEFAULT_TEMPLATE_GLOB}",  # noqa: E501
+            full_templates_glob=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}/{DEFAULT_TEMPLATE_GLOB}",
             root_layout_file=DEFAULT_ROOT_LAYOUT_FILE,
-            full_root_layout_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}/{DEFAULT_ROOT_LAYOUT_FILE}",  # noqa: E501
+            full_root_layout_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}/{DEFAULT_ROOT_LAYOUT_FILE}",
             live_reload_file=DEFAULT_LIVE_RELOAD_FILE,
-            full_live_reload_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_LIVE_RELOAD_FILE}",  # noqa: E501
+            full_live_reload_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_LIVE_RELOAD_FILE}",
             globalcss_file=DEFAULT_GLOBALCSS_FILE,
-            full_globalcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_GLOBALCSS_FILE}",  # noqa: E501
+            full_globalcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_GLOBALCSS_FILE}",
             twcss_file=DEFAULT_TWCSS_FILE,
-            full_twcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_TWCSS_FILE}",  # noqa: E501
+            full_twcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_TWCSS_FILE}",
             minified_twcss_file=DEFAULT_MINIFIED_TWCSS_FILE,
-            full_minified_twcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_MINIFIED_TWCSS_FILE}",  # noqa: E501
+            full_minified_twcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_MINIFIED_TWCSS_FILE}",
         )
 
     gitignore = True if args.gitignore else False
@@ -165,60 +164,60 @@ def get_config(args: argparse.Namespace) -> Config:
     flask_root = args.flask_root
     if flask_root is None:
         flask_root = Term.ask_dir(
-            f"{PKG_PREFIX} Flask app root (relative to {Term.C}cwd/{Term.END}) [{DEFAULT_FLASK_ROOT}] ",  # noqa: E501
+            f"{PKG_PREFIX} Flask app root (relative to {Term.C}cwd/{Term.END}) [{DEFAULT_FLASK_ROOT}] ",
             default=DEFAULT_FLASK_ROOT,
         )
 
     static_folder = Term.ask_dir(
-        f"{PKG_PREFIX} Static folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_STATIC_FOLDER}] ",  # noqa: E501
+        f"{PKG_PREFIX} Static folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_STATIC_FOLDER}] ",
         flask_root,
         DEFAULT_STATIC_FOLDER,
     )
 
     templates_folder = Term.ask_dir(
-        f"{PKG_PREFIX} Templates folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_TEMPLATE_FOLDER}] ",  # noqa: E501
+        f"{PKG_PREFIX} Templates folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_TEMPLATE_FOLDER}] ",
         flask_root,
         DEFAULT_TEMPLATE_FOLDER,
     )
 
     templates_glob = (
         Term.ask(
-            f"{PKG_PREFIX} Templates glob (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_TEMPLATE_GLOB}] ",  # noqa: E501
+            f"{PKG_PREFIX} Templates glob (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_TEMPLATE_GLOB}] ",
         )
         or DEFAULT_TEMPLATE_GLOB
     )
 
     root_layout_file = (
         Term.ask(
-            f"{PKG_PREFIX} Root layout file (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_ROOT_LAYOUT_FILE}] ",  # noqa: E501
+            f"{PKG_PREFIX} Root layout file (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_ROOT_LAYOUT_FILE}] ",
         )
         or DEFAULT_ROOT_LAYOUT_FILE
     )
 
     live_reload_file = (
         Term.ask(
-            f"{PKG_PREFIX} Live reload file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_LIVE_RELOAD_FILE}] ",  # noqa: E501
+            f"{PKG_PREFIX} Live reload file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_LIVE_RELOAD_FILE}] ",
         )
         or DEFAULT_LIVE_RELOAD_FILE
     )
 
     globalcss_file = (
         Term.ask(
-            f"{PKG_PREFIX} Global css file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_GLOBALCSS_FILE}] ",  # noqa: E501
+            f"{PKG_PREFIX} Global css file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_GLOBALCSS_FILE}] ",
         )
         or DEFAULT_GLOBALCSS_FILE
     )
 
     twcss_file = (
         Term.ask(
-            f"{PKG_PREFIX} TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_TWCSS_FILE}] ",  # noqa: E501
+            f"{PKG_PREFIX} TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_TWCSS_FILE}] ",
         )
         or DEFAULT_TWCSS_FILE
     )
 
     minified_twcss_file = (
         Term.ask(
-            f"{PKG_PREFIX} Minified TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_MINIFIED_TWCSS_FILE}] ",  # noqa: E501
+            f"{PKG_PREFIX} Minified TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_MINIFIED_TWCSS_FILE}] ",
         )
         or DEFAULT_MINIFIED_TWCSS_FILE
     )

@@ -13,4 +13,4 @@ poetry.toml
 
 # others
 .env
-.dev-local
+.ignored

@@ -4,10 +4,19 @@
     "editor.tabSize": 4
   },
   "black-formatter.args": [
-    "--line-length=79",
+    "--line-length=79"
   ],
-  "python.analysis.typeCheckingMode": "strict",
-  "files.trimFinalNewlines": true,
+  "files.exclude": {
+    "**/__pycache__": true
+  },
   "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
+  "flake8.args": [
+    "--ignore=E501,W503"
+  ],
+  "isort.args": [
+    "--profile=black"
+  ],
+  "python.analysis.typeCheckingMode": "strict"
 }

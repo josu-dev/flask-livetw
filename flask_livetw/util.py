@@ -3,7 +3,6 @@ import os
 import platform
 from typing import Callable, Union
 
-
 STATIC_PATH = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "static"
 )

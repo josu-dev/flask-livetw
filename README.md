@@ -79,17 +79,18 @@ When you are done developing, you can use the following command to build your ap
 ### Package cli
 
 ```py
-DEFAULT_FLASK_ROOT = 'src'
+DEFAULT_FLASK_ROOT = "src"
 
-DEFAULT_STATIC_FOLDER = 'src/static'
+DEFAULT_STATIC_FOLDER = "src/static"
 
-DEFAULT_TEMPLATE_FOLDER = 'src/templates'
-DEFAULT_TEMPLATE_GLOB = 'src/templates/**/*.html'
+DEFAULT_TEMPLATE_FOLDER = "src/templates"
+DEFAULT_TEMPLATE_GLOB = "src/templates/**/*.html"
 
-DEFAULT_ROOT_LAYOUT_FILE = 'src/templates/layout.html'
-DEFAULT_LIVE_RELOAD_FILE = 'src/static/.dev/live_reload.js'
-DEFAULT_TWCSS_FILE = 'src/static/.dev/tailwindcss.css'
-DEFAULT_MINIFIED_TWCSS_FILE = 'src/static/tailwindcss_min.css'
+DEFAULT_ROOT_LAYOUT_FILE = "src/templates/layout.html"
+DEFAULT_LIVE_RELOAD_FILE = "src/static/.dev/live_reload.js"
+DEFAULT_GLOBALCSS_FILE = ".dev/global.css"
+DEFAULT_TWCSS_FILE = "src/static/.dev/tailwindcss.css"
+DEFAULT_MINIFIED_TWCSS_FILE = "src/static/tailwindcss_min.css"
 
 DEFAULT_UPDATE_GITIGNORE = False
 ```
@@ -101,25 +102,28 @@ project_root
 ├── src
 │   ├── static
 │   │   ├── .dev
+│   │   │   ├── global.css
 │   │   │   ├── live_reload.js
 │   │   │   └── tailwindcss.css
-│   │   └── tailwindcss_min.css
+│   │   ├── tailwindcss_min.css
+│   │   ...
 │   └── templates
 │       ├── layout.html
-│       └── ...
+│       ...
 ├── .gitignore
 ├── dev.py
 ├── pyproject.toml
-└── ...
+...
 ```
 
 ### Dev server
 
 ```py
-LRWS_HOST = '127.0.0.1'
+LRWS_HOST = "127.0.0.1"
 LRWS_PORT = 5678
-TW_OUTPUT_PATH = 'src/static/.dev/tailwindcss.css'
-TW_OUTPUT_PATH_BUILD = 'src/static/tailwindcss_min.css'
+TW_INPUT_PATH = "package_test/static/.dev/global.css"
+TW_OUTPUT_PATH = "src/static/.dev/tailwindcss.css"
+TW_OUTPUT_PATH_BUILD = "src/static/tailwindcss_min.css"
 ```
 
 ## Contributing
