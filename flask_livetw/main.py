@@ -158,7 +158,7 @@ def update_layout(
                 generate_live_reload_template(
                     live_reload_file, twcss_file, minified_twcss_file
                 )
-                + "</head>",
+                + "\n</head>",
             )
             f.seek(0)
             f.write(layout)

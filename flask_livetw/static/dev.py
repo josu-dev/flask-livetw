@@ -16,11 +16,6 @@ import websockets.legacy.protocol as ws_protocol
 import websockets.server as ws_server
 
 
-# docs:
-# - https://websockets.readthedocs.io/en/stable/intro/tutorial2.html
-# - https://websockets.readthedocs.io/en/stable/reference/asyncio/server.html
-
-
 class Term:
     if platform.system() == "Windows":
         os.system("color")
@@ -56,10 +51,17 @@ dotenv.load_dotenv()
 
 LRWS_HOST = os.getenv("LIVE_RELOAD_WS_HOST", "127.0.0.1")
 LRWS_PORT = int_or_default(os.getenv("LIVE_RELOAD_WS_PORT"), 5678)
-TW_INPUT_PATH = os.getenv("TW_INPUT_PATH", "{tailwind_input_placeholder}")
-TW_OUTPUT_PATH = os.getenv("TW_OUTPUT_PATH", "{tailwind_output_placeholder}")
+TW_INPUT_PATH = os.getenv(
+    "TW_INPUT_PATH",
+    "{tailwind_input_placeholder}",
+)
+TW_OUTPUT_PATH = os.getenv(
+    "TW_OUTPUT_PATH",
+    "{tailwind_output_placeholder}",
+)
 TW_OUTPUT_PATH_BUILD = os.getenv(
-    "TW_OUTPUT_PATH_BUILD", "{minified_tailwind_output_placeholder}"
+    "TW_OUTPUT_PATH_BUILD",
+    "{minified_tailwind_output_placeholder}",
 )
 
 
