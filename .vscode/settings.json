@@ -16,7 +16,8 @@
     "--ignore=E501,W503"
   ],
   "isort.args": [
-    "--profile=black"
+    "--profile",
+    "black"
   ],
   "python.analysis.typeCheckingMode": "strict"
 }

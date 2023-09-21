@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import dataclasses
 import os
 import platform
 from typing import Callable, Union
 
+PKG_PREFIX = "livetw"
+
 STATIC_PATH = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "static"
+    os.path.dirname(os.path.realpath(__file__)), "resources"
 )
 
 
@@ -122,3 +126,7 @@ class Term:
 
             Term.error(f"'{full_path}' is not a dir")
             dir = input(message).strip()
+
+
+def pkgprint(*values: object, end: str = "\n", sep: str = " ") -> None:
+    print(f"{Term.M}{PKG_PREFIX}{Term.END}", *values, end=end, sep=sep)

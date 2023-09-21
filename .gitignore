@@ -9,6 +9,7 @@ __pycache__/
 # poetry
 dist/
 poetry.toml
+poetry.lock
 .pytest_cache/
 
 # others

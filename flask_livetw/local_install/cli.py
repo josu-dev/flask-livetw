@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import dataclasses
 import os
@@ -5,7 +7,9 @@ import shlex
 import subprocess
 from typing import Union
 
-from flask_livetw.util import Term
+from flask_livetw.util import PKG_PREFIX, Term, pkgprint
+
+DEFAULT_UPDATE_GITIGNORE = False
 
 DEFAULT_FLASK_ROOT = "src"
 
@@ -14,16 +18,15 @@ DEFAULT_STATIC_FOLDER = "static"
 DEFAULT_TEMPLATE_FOLDER = "templates"
 DEFAULT_TEMPLATE_GLOB = "**/*.html"
 
-DEFAULT_ROOT_LAYOUT_FILE = "layout.html"
-DEFAULT_LIVE_RELOAD_FILE = ".dev/live_reload.js"
-DEFAULT_GLOBALCSS_FILE = ".dev/global.css"
-DEFAULT_TWCSS_FILE = ".dev/tailwindcss.css"
-DEFAULT_MINIFIED_TWCSS_FILE = "tailwindcss_min.css"
-
-DEFAULT_UPDATE_GITIGNORE = False
+DEFAULT_FILE_ROOT_LAYOUT = "layout.html"
+DEFAULT_FILE_LIVE_RELOAD = ".dev/live_reload.js"
+DEFAULT_FILE_GLOBALCSS = ".dev/global.css"
+DEFAULT_FILE_TWCSS = ".dev/tailwindcss.css"
+DEFAULT_FILE_MINIFIED_TWCSS = "tailwindcss_min.css"
 
 
-PKG_PREFIX = f"{Term.M}[livetw]{Term.END}"
+LRWS_HOST = "127.0.0.1"
+LRWS_PORT = 5678
 
 
 @dataclasses.dataclass
@@ -52,13 +55,137 @@ class Config:
     full_minified_twcss_file: str
 
 
-def create_cli() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Mods a Flask app to use TailwindCSS in a dev server like manner.",
-        allow_abbrev=True,
-        formatter_class=argparse.MetavarTypeHelpFormatter,
+def check_requirements() -> int:
+    pkgprint("Checking requirements...")
+    cwd = os.getcwd()
+    pkgprint(f"Current working directory: {Term.C}{cwd}{Term.END}")
+    continue_install = Term.confirm(
+        f"{Term.M}[{PKG_PREFIX}]{Term.END}Is this your project root?"
     )
 
+    if not continue_install:
+        pkgprint("Change cwd and start again. Modding canceled")
+        return 1
+
+    python_cmd = shlex.split("python --version")
+    python_cmd_result = subprocess.run(
+        python_cmd, shell=True, capture_output=True
+    )
+
+    if python_cmd_result.returncode != 0:
+        Term.error("python --version failed, is python installed?")
+        return python_cmd_result.returncode
+
+    version = python_cmd_result.stdout.decode("utf-8").strip()
+    if version != "Python 3.8.10":
+        pkgprint(f"python --version: {Term.C}{version}{Term.END}")
+
+        continue_install = Term.confirm(
+            f"{PKG_PREFIX} Continue with this version?"
+        )
+        if not continue_install:
+            pkgprint("Change python version and start again. Modding canceled")
+            return 1
+
+    return 0
+
+
+def ask_config(args: argparse.Namespace) -> Config:
+    gitignore = True if args.gitignore else False
+
+    Term.blank()
+
+    flask_root = args.flask_root
+    if flask_root is None:
+        flask_root = Term.ask_dir(
+            f"{PKG_PREFIX} Flask app root (relative to {Term.C}cwd/{Term.END}) [{DEFAULT_FLASK_ROOT}] ",
+            default=DEFAULT_FLASK_ROOT,
+        )
+
+    static_folder = Term.ask_dir(
+        f"{PKG_PREFIX} Static folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_STATIC_FOLDER}] ",
+        flask_root,
+        DEFAULT_STATIC_FOLDER,
+    )
+
+    templates_folder = Term.ask_dir(
+        f"{PKG_PREFIX} Templates folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_TEMPLATE_FOLDER}] ",
+        flask_root,
+        DEFAULT_TEMPLATE_FOLDER,
+    )
+
+    templates_glob = (
+        Term.ask(
+            f"{PKG_PREFIX} Templates glob (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_TEMPLATE_GLOB}] ",
+        )
+        or DEFAULT_TEMPLATE_GLOB
+    )
+
+    root_layout_file = (
+        Term.ask(
+            f"{PKG_PREFIX} Root layout file (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_FILE_ROOT_LAYOUT}] ",
+        )
+        or DEFAULT_FILE_ROOT_LAYOUT
+    )
+
+    live_reload_file = (
+        Term.ask(
+            f"{PKG_PREFIX} Live reload file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_FILE_LIVE_RELOAD}] ",
+        )
+        or DEFAULT_FILE_LIVE_RELOAD
+    )
+
+    globalcss_file = (
+        Term.ask(
+            f"{PKG_PREFIX} Global css file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_FILE_GLOBALCSS}] ",
+        )
+        or DEFAULT_FILE_GLOBALCSS
+    )
+
+    twcss_file = (
+        Term.ask(
+            f"{PKG_PREFIX} TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_FILE_TWCSS}] ",
+        )
+        or DEFAULT_FILE_TWCSS
+    )
+
+    minified_twcss_file = (
+        Term.ask(
+            f"{PKG_PREFIX} Minified TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_FILE_MINIFIED_TWCSS}] ",
+        )
+        or DEFAULT_FILE_MINIFIED_TWCSS
+    )
+
+    if not flask_root or flask_root == ".":
+        full_static_folder = static_folder
+        full_templates_folder = templates_folder
+    else:
+        full_static_folder = f"{flask_root}/{static_folder}"
+        full_templates_folder = f"{flask_root}/{templates_folder}"
+
+    return Config(
+        gitignore=gitignore,
+        flask_root=flask_root,
+        static_folder=static_folder,
+        full_static_folder=full_static_folder,
+        templates_folder=templates_folder,
+        full_templates_folder=full_templates_folder,
+        templates_glob=templates_glob,
+        full_templates_glob=f"{full_templates_folder}/{templates_glob}",
+        root_layout_file=root_layout_file,
+        full_root_layout_file=f"{full_templates_folder}/{root_layout_file}",
+        live_reload_file=live_reload_file,
+        full_live_reload_file=f"{full_static_folder}/{live_reload_file}",
+        globalcss_file=globalcss_file,
+        full_globalcss_file=f"{full_static_folder}/{globalcss_file}",
+        twcss_file=twcss_file,
+        full_twcss_file=f"{full_static_folder}/{twcss_file}",
+        minified_twcss_file=minified_twcss_file,
+        full_minified_twcss_file=f"{full_static_folder}/{minified_twcss_file}",
+    )
+
+
+def _add_cli_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-Y",
         "--yes",
@@ -94,158 +221,29 @@ def create_cli() -> argparse.ArgumentParser:
         help="flask app root path (relative to cwd)",
     )
 
-    return parser
 
-
-def pkgprint(*values: object, end: str = "\n", sep: str = " ") -> None:
-    print(f"{PKG_PREFIX}", *values, end=end, sep=sep)
-
-
-def check_requirements() -> int:
-    pkgprint("Checking requirements...")
-    cwd = os.getcwd()
-    pkgprint(f"Current working directory: {Term.C}{cwd}{Term.END}")
-    continue_install = Term.confirm(f"{PKG_PREFIX} Is this your project root?")
-
-    if not continue_install:
-        pkgprint("Change cwd and start again. Modding canceled")
-        return 1
-
-    python_cmd = shlex.split("python --version")
-    python_cmd_result = subprocess.run(
-        python_cmd, shell=True, capture_output=True
+def add_local_install_command(
+    subparser: argparse._SubParsersAction[argparse.ArgumentParser],
+) -> None:
+    parser = subparser.add_parser(
+        name="local_install",
+        description="""
+            Mods a Flask app to use TailwindCSS in a dev server like manner.
+        """,
+        help="Mods the project.",
+        allow_abbrev=True,
+        formatter_class=argparse.MetavarTypeHelpFormatter,
     )
 
-    if python_cmd_result.returncode != 0:
-        Term.error("python --version failed, is python installed?")
-        return python_cmd_result.returncode
-
-    version = python_cmd_result.stdout.decode("utf-8").strip()
-    if version != "Python 3.8.10":
-        pkgprint(f"python --version: {Term.C}{version}{Term.END}")
-
-        continue_install = Term.confirm(
-            f"{PKG_PREFIX} Continue with this version?"
-        )
-        if not continue_install:
-            pkgprint("Change python version and start again. Modding canceled")
-            return 1
-
-    return 0
+    _add_cli_arguments(parser)
 
 
-def get_config(args: argparse.Namespace) -> Config:
-    if args.default:
-        return Config(
-            gitignore=DEFAULT_UPDATE_GITIGNORE,
-            flask_root=DEFAULT_FLASK_ROOT,
-            static_folder=DEFAULT_STATIC_FOLDER,
-            full_static_folder=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}",
-            templates_folder=DEFAULT_TEMPLATE_FOLDER,
-            full_templates_folder=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}",
-            templates_glob=DEFAULT_TEMPLATE_GLOB,
-            full_templates_glob=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}/{DEFAULT_TEMPLATE_GLOB}",
-            root_layout_file=DEFAULT_ROOT_LAYOUT_FILE,
-            full_root_layout_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}/{DEFAULT_ROOT_LAYOUT_FILE}",
-            live_reload_file=DEFAULT_LIVE_RELOAD_FILE,
-            full_live_reload_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_LIVE_RELOAD_FILE}",
-            globalcss_file=DEFAULT_GLOBALCSS_FILE,
-            full_globalcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_GLOBALCSS_FILE}",
-            twcss_file=DEFAULT_TWCSS_FILE,
-            full_twcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_TWCSS_FILE}",
-            minified_twcss_file=DEFAULT_MINIFIED_TWCSS_FILE,
-            full_minified_twcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_MINIFIED_TWCSS_FILE}",
-        )
+# def create_cli() -> argparse.ArgumentParser:
+#     parser = argparse.ArgumentParser(
+#         description="Mods a Flask app to use TailwindCSS in a dev server like manner.",
+#         allow_abbrev=True,
+#         formatter_class=argparse.MetavarTypeHelpFormatter,
+#     )
 
-    gitignore = True if args.gitignore else False
 
-    Term.blank()
-
-    flask_root = args.flask_root
-    if flask_root is None:
-        flask_root = Term.ask_dir(
-            f"{PKG_PREFIX} Flask app root (relative to {Term.C}cwd/{Term.END}) [{DEFAULT_FLASK_ROOT}] ",
-            default=DEFAULT_FLASK_ROOT,
-        )
-
-    static_folder = Term.ask_dir(
-        f"{PKG_PREFIX} Static folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_STATIC_FOLDER}] ",
-        flask_root,
-        DEFAULT_STATIC_FOLDER,
-    )
-
-    templates_folder = Term.ask_dir(
-        f"{PKG_PREFIX} Templates folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_TEMPLATE_FOLDER}] ",
-        flask_root,
-        DEFAULT_TEMPLATE_FOLDER,
-    )
-
-    templates_glob = (
-        Term.ask(
-            f"{PKG_PREFIX} Templates glob (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_TEMPLATE_GLOB}] ",
-        )
-        or DEFAULT_TEMPLATE_GLOB
-    )
-
-    root_layout_file = (
-        Term.ask(
-            f"{PKG_PREFIX} Root layout file (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_ROOT_LAYOUT_FILE}] ",
-        )
-        or DEFAULT_ROOT_LAYOUT_FILE
-    )
-
-    live_reload_file = (
-        Term.ask(
-            f"{PKG_PREFIX} Live reload file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_LIVE_RELOAD_FILE}] ",
-        )
-        or DEFAULT_LIVE_RELOAD_FILE
-    )
-
-    globalcss_file = (
-        Term.ask(
-            f"{PKG_PREFIX} Global css file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_GLOBALCSS_FILE}] ",
-        )
-        or DEFAULT_GLOBALCSS_FILE
-    )
-
-    twcss_file = (
-        Term.ask(
-            f"{PKG_PREFIX} TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_TWCSS_FILE}] ",
-        )
-        or DEFAULT_TWCSS_FILE
-    )
-
-    minified_twcss_file = (
-        Term.ask(
-            f"{PKG_PREFIX} Minified TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_MINIFIED_TWCSS_FILE}] ",
-        )
-        or DEFAULT_MINIFIED_TWCSS_FILE
-    )
-
-    if not flask_root or flask_root == ".":
-        full_static_folder = static_folder
-        full_templates_folder = templates_folder
-    else:
-        full_static_folder = f"{flask_root}/{static_folder}"
-        full_templates_folder = f"{flask_root}/{templates_folder}"
-
-    return Config(
-        gitignore=gitignore,
-        flask_root=flask_root,
-        static_folder=static_folder,
-        full_static_folder=full_static_folder,
-        templates_folder=templates_folder,
-        full_templates_folder=full_templates_folder,
-        templates_glob=templates_glob,
-        full_templates_glob=f"{full_templates_folder}/{templates_glob}",
-        root_layout_file=root_layout_file,
-        full_root_layout_file=f"{full_templates_folder}/{root_layout_file}",
-        live_reload_file=live_reload_file,
-        full_live_reload_file=f"{full_static_folder}/{live_reload_file}",
-        globalcss_file=globalcss_file,
-        full_globalcss_file=f"{full_static_folder}/{globalcss_file}",
-        twcss_file=twcss_file,
-        full_twcss_file=f"{full_static_folder}/{twcss_file}",
-        minified_twcss_file=minified_twcss_file,
-        full_minified_twcss_file=f"{full_static_folder}/{minified_twcss_file}",
-    )
+#     return parser

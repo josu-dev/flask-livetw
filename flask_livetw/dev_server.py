@@ -1,0 +1,327 @@
+from __future__ import annotations
+
+import argparse
+import asyncio
+import concurrent.futures
+import dataclasses
+import datetime
+import json
+import shlex
+import subprocess
+from typing import Sequence, Set
+
+import websockets.legacy.protocol as ws_protocol
+import websockets.server as ws_server
+
+from flask_livetw.config import Config
+from flask_livetw.util import Term, pkgprint
+
+LR_CONNECTIONS: Set[ws_server.WebSocketServerProtocol] = set()
+
+
+async def handle_connection(websocket: ws_server.WebSocketServerProtocol):
+    LR_CONNECTIONS.add(websocket)
+    try:
+        await websocket.wait_closed()
+    finally:
+        LR_CONNECTIONS.remove(websocket)
+
+
+async def live_reload_server(host: str, port: int):
+    async with ws_server.serve(handle_connection, host, port) as server:
+        pkgprint(
+            f"Live reload {Term.G}ready{Term.END} on {Term.C}ws://{host}:{Term.BOLD}{port}{Term.END}"  # noqa: E501
+        )
+
+        await server.wait_closed()
+
+        pkgprint(f"Live reload {Term.G}closed{Term.END}")
+
+
+def handle_tailwind_output(process: subprocess.Popen[bytes]):
+    if process.stdout is None:
+        return
+
+    for line in iter(process.stdout.readline, b""):
+        if process.poll() is not None:
+            break
+
+        if line.startswith(b"Done"):
+            ws_protocol.broadcast(
+                LR_CONNECTIONS,
+                json.dumps(
+                    {
+                        "type": "TRIGGER_FULL_RELOAD",
+                        "data": datetime.datetime.now().isoformat(),
+                    }
+                ),
+            )
+
+        print(f'{Term.C}[twcss]{Term.END} {line.decode("utf-8")}', end="")
+
+
+def handle_flask_output(process: subprocess.Popen[bytes]):
+    if process.stdout is None:
+        return
+
+    for line in iter(process.stdout.readline, b""):
+        if process.poll() is not None:
+            break
+
+        print(f'{Term.G}[flask]{Term.END} {line.decode("utf-8")}', end="")
+
+
+@dataclasses.dataclass
+class DevConfig:
+    no_live_reload: bool
+    live_reload_host: str | None
+    live_reload_port: int | None
+
+    no_flask: bool
+    flask_host: str | None
+    flask_port: int | None
+    flask_mode: str
+    flask_exclude_patterns: Sequence[str] | None
+
+    no_tailwind: bool
+    tailwind_input: str | None
+    tailwind_output: str | None
+    tailwind_minify: bool
+
+
+async def dev_server(config: DevConfig):
+    def live_reload_coroutine():
+        if config.no_live_reload or config.no_tailwind:
+            return None
+
+        host = config.live_reload_host or "localhost"
+        port = config.live_reload_port or 35729
+
+        return live_reload_server(host, port)
+
+    def tw_cli_executor(
+        loop: asyncio.AbstractEventLoop,
+        pool: concurrent.futures.ThreadPoolExecutor,
+    ):
+        if config.no_tailwind:
+            return None
+
+        input_arg = f"-i {config.tailwind_input}"
+
+        output_arg = f"-o {config.tailwind_output}"
+
+        minify_arg = "--minify" if config.tailwind_minify else ""
+
+        cmd = f"tailwindcss --watch {input_arg} {output_arg} {minify_arg}"
+
+        process = subprocess.Popen(
+            shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+
+        return loop.run_in_executor(pool, handle_tailwind_output, process)
+
+    def flask_server_executor(
+        loop: asyncio.AbstractEventLoop,
+        pool: concurrent.futures.ThreadPoolExecutor,
+    ):
+        if config.no_flask:
+            return None
+
+        host_arg = (
+            "--host" + config.flask_host
+            if config.flask_host is not None
+            else ""
+        )
+
+        port_arg = (
+            "--port" + str(config.flask_port)
+            if config.flask_port is not None
+            else ""
+        )
+
+        debug_arg = "--debug" if config.flask_mode == "debug" else ""
+
+        exclude_patterns = ["*/**/dev.py", "*/**/install_dev_mode.py"]
+        if config.flask_exclude_patterns is not None:
+            exclude_patterns.extend(config.flask_exclude_patterns)
+        exclude_patterns_arg = (
+            f'--exclude-patterns {";".join(exclude_patterns)}'
+        )
+
+        cmd = f"\
+            flask run {host_arg} {port_arg} {debug_arg} {exclude_patterns_arg}"
+
+        process = subprocess.Popen(
+            shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+
+        return loop.run_in_executor(pool, handle_flask_output, process)
+
+    loop = asyncio.get_running_loop()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        maybe_future_like = (
+            live_reload_coroutine(),
+            tw_cli_executor(loop, pool),
+            flask_server_executor(loop, pool),
+        )
+
+        futures = (
+            future for future in maybe_future_like if future is not None
+        )
+
+        _ = await asyncio.gather(*futures, return_exceptions=True)
+
+
+def dev(cli: argparse.Namespace) -> None:
+    _ = Config.from_pyproject_toml()
+
+    dev_config = DevConfig(
+        no_live_reload=cli.no_live_reload,
+        live_reload_host=cli.live_reload_host,
+        live_reload_port=cli.live_reload_port,
+        no_flask=cli.no_flask,
+        flask_host=cli.flask_host,
+        flask_port=cli.flask_port,
+        flask_mode=cli.flask_mode,
+        flask_exclude_patterns=cli.flask_exclude_patterns,
+        no_tailwind=cli.no_tailwind,
+        tailwind_input=cli.tailwind_input,
+        tailwind_output=cli.tailwind_output,
+        tailwind_minify=cli.tailwind_minify,
+    )
+
+    asyncio.run(dev_server(dev_config))
+
+
+def _add_cli_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--no-live-reload",
+        dest="no_live_reload",
+        action="store_true",
+        default=False,
+        help="Disable live reload server.",
+    )
+    parser.add_argument(
+        "-lrh",
+        "--live-reload-host",
+        dest="live_reload_host",
+        type=str,
+        help="Hostname for live reload server.",
+    )
+    parser.add_argument(
+        "-lrp",
+        "--live-reload-port",
+        dest="live_reload_port",
+        type=int,
+        help="Port for live reload server.",
+    )
+
+    parser.add_argument(
+        "--no-flask",
+        dest="no_flask",
+        action="store_true",
+        default=False,
+        help="Disable flask server.",
+    )
+    parser.add_argument(
+        "-fh",
+        "--flask-host",
+        dest="flask_host",
+        type=str,
+        help="Hostname for flask server.",
+    )
+    parser.add_argument(
+        "-fp",
+        "--flask-port",
+        dest="flask_port",
+        type=int,
+        help="Port for flask server.",
+    )
+    parser.add_argument(
+        "-fm",
+        "--flask-mode",
+        dest="flask_mode",
+        choices=("debug", "no-debug"),
+        default="debug",
+        help="If debug mode is enabled, the flask server will be started with --debug flag. Default: debug.",  # noqa: E501
+    )
+    parser.add_argument(
+        "--flask-exclude-patterns",
+        dest="flask_exclude_patterns",
+        type=str,
+        nargs="+",
+        help="File exclude patterns for flask server. Base: */**/dev.py */**/install_dev_mode.py",  # noqa: E501
+    )
+
+    parser.add_argument(
+        "-nt",
+        "--no-tailwind",
+        dest="no_tailwind",
+        action="store_true",
+        default=False,
+        help="Disable tailwindcss generation. If tailwindcss is disabled the live reload server will not be started.",  # noqa: E501
+    )
+    parser.add_argument(
+        "-ti",
+        "--tailwind-input",
+        dest="tailwind_input",
+        type=str,
+        help="Input path for global css file. Includes glob patterns.",
+    )
+    parser.add_argument(
+        "-to",
+        "--tailwind-output",
+        dest="tailwind_output",
+        type=str,
+        help="Output path for the generated css file.",
+    )
+    parser.add_argument(
+        "-tm",
+        "--tailwind-minify",
+        dest="tailwind_minify",
+        action="store_true",
+        default=False,
+        help="Enables minification of the generated css file.",
+    )
+
+
+def add_dev_command(
+    subparser: argparse._SubParsersAction[argparse.ArgumentParser],
+) -> None:
+    parser = subparser.add_parser(
+        name="dev",
+        description="""
+            Extended dev mode for flask apps.
+            By default runs the flask app in debug mode,
+            tailwindcss in watch mode and live reload server.
+        """,
+        help="Run a development server.",
+        allow_abbrev=True,
+        formatter_class=argparse.MetavarTypeHelpFormatter,
+    )
+
+    _add_cli_arguments(parser)
+
+
+def main(args: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="""
+            Extended dev mode for flask apps.
+            By default runs the flask app in debug mode,
+            tailwindcss in watch mode and live reload server.
+        """,
+        allow_abbrev=True,
+        formatter_class=argparse.MetavarTypeHelpFormatter,
+    )
+    _add_cli_arguments(parser)
+
+    parsed_args = parser.parse_args(args)
+
+    dev(parsed_args)
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
