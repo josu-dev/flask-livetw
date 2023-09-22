@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import argparse
-from flask_livetw.util import Term, load_resource, pkgprint
-from typing import Sequence
 import os
-import subprocess
-import shlex
 import re
+import shlex
+import subprocess
+from typing import Sequence
+
+from flask_livetw.util import Term, load_resource, pkgprint
 
 DEV_DEPENDENCIES = "pytailwindcss python-dotenv websockets"
 
