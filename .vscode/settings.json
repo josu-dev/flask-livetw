@@ -12,9 +12,5 @@
   "flake8.args": [
     "--ignore=E501,W503"
   ],
-  "python.analysis.typeCheckingMode": "strict",
-  "isort.args": [
-    "--profile=black",
-    "--multi-line=3",
-  ]
+  "python.analysis.typeCheckingMode": "strict"
 }
