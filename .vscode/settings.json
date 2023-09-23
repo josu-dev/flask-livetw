@@ -3,9 +3,6 @@
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.tabSize": 4
   },
-  "black-formatter.args": [
-    "--line-length=79"
-  ],
   "files.exclude": {
     "**/__pycache__": true
   },
@@ -15,8 +12,9 @@
   "flake8.args": [
     "--ignore=E501,W503"
   ],
+  "python.analysis.typeCheckingMode": "strict",
   "isort.args": [
-    "--profile=black"
-  ],
-  "python.analysis.typeCheckingMode": "strict"
+    "--profile=black",
+    "--multi-line=3",
+  ]
 }

@@ -11,17 +11,16 @@ repos:
     rev: '5.12.0'
     hooks:
     -   id: isort
-        args: ['--profile=black']
+        args: ["--profile", "black", "--filter-files"]
 
 -   repo: https://github.com/psf/black
     rev: '23.9.1'
     hooks:
     -   id: black
-        args: ['--line-length=79']
 
 -   repo: https://github.com/pycqa/flake8
     rev: '6.1.0'
     hooks:
     -   id: flake8
-        args: ['--extend-ignore=E203,E501']
+        args: ['--extend-ignore=E203,E501,W503']
         stages: [pre-push]

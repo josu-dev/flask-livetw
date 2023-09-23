@@ -7,9 +7,8 @@ import shlex
 import subprocess
 from typing import Sequence
 
-from flask_livetw.config import Config
-from flask_livetw.local_install import cli
-from flask_livetw.util import Term, load_resource, pkgprint
+from flask_livetw.config import Config, ask_project_layout
+from flask_livetw.util import PKG_PREFIX, Term, load_resource, pkgprint
 
 DEV_DEPENDENCIES = "pytailwindcss python-dotenv websockets"
 
@@ -226,17 +225,52 @@ def update_gitignore(static_folder: str, twcss_file: str) -> None:
             f.write(content)
 
 
+def check_requirements() -> int:
+    pkgprint("Checking requirements...")
+    cwd = os.getcwd()
+    pkgprint(f"Current working directory: {Term.C}{cwd}{Term.END}")
+    continue_install = Term.confirm(
+        f"{Term.M}[{PKG_PREFIX}]{Term.END}Is this your project root?"
+    )
+
+    if not continue_install:
+        pkgprint("Change cwd and start again. Modding canceled")
+        return 1
+
+    python_cmd = shlex.split("python --version")
+    python_cmd_result = subprocess.run(
+        python_cmd, shell=True, capture_output=True
+    )
+
+    if python_cmd_result.returncode != 0:
+        Term.error("python --version failed, is python installed?")
+        return python_cmd_result.returncode
+
+    version = python_cmd_result.stdout.decode("utf-8").strip()
+    if version != "Python 3.8.10":
+        pkgprint(f"python --version: {Term.C}{version}{Term.END}")
+
+        continue_install = Term.confirm(
+            f"{PKG_PREFIX} Continue with this version?"
+        )
+        if not continue_install:
+            pkgprint("Change python version and start again. Modding canceled")
+            return 1
+
+    return 0
+
+
 def local_install(args: argparse.Namespace) -> int:
     _ = Config.from_pyproject_toml()
 
     if not args.all_yes:
-        code = cli.check_requirements()
+        code = check_requirements()
         if code != 0:
             return code
 
-    config = cli.ask_config(args)
+    config = ask_project_layout()
 
-    pkgprint("Modding your project... 🚀")
+    pkgprint("Installing flask-livetw locally 🚀...")
 
     dependancies_code = install_dev_dependencies()
     if dependancies_code > 0:
@@ -249,21 +283,21 @@ def local_install(args: argparse.Namespace) -> int:
     generate_files(
         config.full_live_reload_file,
         config.full_globalcss_file,
-        config.full_twcss_file,
-        config.full_minified_twcss_file,
+        config.full_tailwind_file,
+        config.full_tailwind_minified_file,
     )
 
     code = update_layout(
         config.full_root_layout_file,
         config.live_reload_file,
-        config.twcss_file,
-        config.minified_twcss_file,
+        config.full_tailwind_file,
+        config.full_tailwind_minified_file,
     )
     if code != 0:
         return code
 
-    if config.gitignore:
-        update_gitignore(config.full_static_folder, config.twcss_file)
+    if args.gitignore:
+        update_gitignore(config.full_static_folder, config.tailwind_file)
 
     Term.blank()
 
@@ -286,6 +320,51 @@ def local_install(args: argparse.Namespace) -> int:
     return 0
 
 
+def add_command_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-Y",
+        "--yes",
+        dest="all_yes",
+        action="store_true",
+        default=False,
+        help="answer yes to all requirements checks",
+    )
+
+    parser.add_argument(
+        "-D",
+        "--default",
+        dest="default",
+        action="store_true",
+        default=False,
+        help="use default values for all options",
+    )
+
+    parser.add_argument(
+        "--gi",
+        "--gitignore",
+        dest="gitignore",
+        action="store_true",
+        default=False,
+        help="update .gitignore to exclude dev related files",
+    )
+
+
+def add_command(
+    subparser: argparse._SubParsersAction[argparse.ArgumentParser],
+) -> None:
+    parser = subparser.add_parser(
+        name="local_install",
+        description="""
+            Mods a Flask app to use TailwindCSS in a dev server like manner.
+        """,
+        help="Mods the project.",
+        allow_abbrev=True,
+        formatter_class=argparse.MetavarTypeHelpFormatter,
+    )
+
+    add_command_args(parser)
+
+
 def main(args: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="""
@@ -296,7 +375,7 @@ def main(args: Sequence[str] | None = None) -> int:
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )
-    cli._add_cli_arguments(parser)
+    add_command_args(parser)
 
     parsed_args = parser.parse_args(args)
 
@@ -305,25 +384,3 @@ def main(args: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-# if args.default:
-#     return Config(
-#         gitignore=DEFAULT_UPDATE_GITIGNORE,
-#         flask_root=DEFAULT_FLASK_ROOT,
-#         static_folder=DEFAULT_STATIC_FOLDER,
-#         full_static_folder=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}",
-#         templates_folder=DEFAULT_TEMPLATE_FOLDER,
-#         full_templates_folder=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}",
-#         templates_glob=DEFAULT_TEMPLATE_GLOB,
-#         full_templates_glob=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}/{DEFAULT_TEMPLATE_GLOB}",
-#         root_layout_file=DEFAULT_ROOT_LAYOUT_FILE,
-#         full_root_layout_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_TEMPLATE_FOLDER}/{DEFAULT_ROOT_LAYOUT_FILE}",
-#         live_reload_file=DEFAULT_LIVE_RELOAD_FILE,
-#         full_live_reload_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_LIVE_RELOAD_FILE}",
-#         globalcss_file=DEFAULT_GLOBALCSS_FILE,
-#         full_globalcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_GLOBALCSS_FILE}",
-#         twcss_file=DEFAULT_TWCSS_FILE,
-#         full_twcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_TWCSS_FILE}",
-#         minified_twcss_file=DEFAULT_MINIFIED_TWCSS_FILE,
-#         full_minified_twcss_file=f"{DEFAULT_FLASK_ROOT}/{DEFAULT_STATIC_FOLDER}/{DEFAULT_MINIFIED_TWCSS_FILE}",
-#     )

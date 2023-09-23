@@ -40,19 +40,19 @@ def minify_tailwind(config: BuildConfig) -> int:
     return build_result.returncode
 
 
-def build(cli: argparse.Namespace) -> int:
+def build(cli_args: argparse.Namespace) -> int:
     config = Config.from_pyproject_toml()
 
     build_config = BuildConfig(
-        input=cli.input or config.globalcss_file,
-        output=cli.output or config.minified_twcss_file,
-        minify=cli.minify,
+        input=cli_args.input or config.globalcss_file,
+        output=cli_args.output or config.tailwind_minified_file,
+        minify=cli_args.minify,
     )
 
     return minify_tailwind(build_config)
 
 
-def _add_cli_arguments(parser: argparse.ArgumentParser) -> None:
+def add_command_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-i",
         "--input",
@@ -76,29 +76,30 @@ def _add_cli_arguments(parser: argparse.ArgumentParser) -> None:
     parser.set_defaults(minify=MINIFY_ON_BUILD)
 
 
-def add_build_command(
+def add_command(
     subparser: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
     parser = subparser.add_parser(
         name="build",
         description="""
-            Build the tailwindcss of the provided input as a single css file.
+        Build the tailwindcss of the project as a single minified css file.
         """,
         help="Build tailwindcss for production.",
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )
 
-    _add_cli_arguments(parser)
+    add_command_args(parser)
 
 
 def main(args: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Build the tailwindcss of the provided input as a single css file.",
+        description="Build the tailwindcss of the project as a single css file.",
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )
-    _add_cli_arguments(parser)
+
+    add_command_args(parser)
 
     parsed_args = parser.parse_args(args)
 

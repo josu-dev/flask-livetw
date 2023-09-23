@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import annotations
 
 import argparse
@@ -9,7 +8,8 @@ from flask_livetw import build_app, dev_server, initialize, local_install
 
 def create_cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Mods a Flask app to use TailwindCSS in a dev server like manner.",
+        prog="flask-livetw",
+        description="CLI for flask-livetw commands.",
         allow_abbrev=True,
     )
 
@@ -19,10 +19,10 @@ def create_cli() -> argparse.ArgumentParser:
         required=True,
     )
 
-    build_app.add_build_command(subparsers)
-    dev_server.add_dev_command(subparsers)
-    initialize.add_init_command(subparsers)
-    local_install.add_local_install_command(subparsers)
+    dev_server.add_command(subparsers)
+    build_app.add_command(subparsers)
+    initialize.add_command(subparsers)
+    local_install.add_command(subparsers)
 
     return parser
 
@@ -31,8 +31,7 @@ def main(args: Sequence[str] | None = None) -> int:
     parsed_args = create_cli().parse_args(args)
 
     if parsed_args.command == "dev":
-        dev_server.dev(parsed_args)
-        return 0
+        return dev_server.dev(parsed_args)
 
     if parsed_args.command == "build":
         return build_app.build(parsed_args)

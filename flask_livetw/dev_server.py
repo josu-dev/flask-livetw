@@ -16,6 +16,8 @@ import websockets.server as ws_server
 from flask_livetw.config import Config
 from flask_livetw.util import Term, pkgprint
 
+FLASK_BASE_EXCLUDE_PATTERNS = ("*/**/dev.py",)
+
 LR_CONNECTIONS: Set[ws_server.WebSocketServerProtocol] = set()
 
 
@@ -30,7 +32,7 @@ async def handle_connection(websocket: ws_server.WebSocketServerProtocol):
 async def live_reload_server(host: str, port: int):
     async with ws_server.serve(handle_connection, host, port) as server:
         pkgprint(
-            f"Live reload {Term.G}ready{Term.END} on {Term.C}ws://{host}:{Term.BOLD}{port}{Term.END}"  # noqa: E501
+            f"Live reload {Term.G}ready{Term.END} on {Term.C}ws://{host}:{Term.BOLD}{port}{Term.END}"
         )
 
         await server.wait_closed()
@@ -74,18 +76,18 @@ def handle_flask_output(process: subprocess.Popen[bytes]):
 @dataclasses.dataclass
 class DevConfig:
     no_live_reload: bool
-    live_reload_host: str | None
-    live_reload_port: int | None
+    live_reload_host: str
+    live_reload_port: int
 
     no_flask: bool
-    flask_host: str | None
-    flask_port: int | None
+    flask_host: str
+    flask_port: int
     flask_mode: str
     flask_exclude_patterns: Sequence[str] | None
 
     no_tailwind: bool
     tailwind_input: str | None
-    tailwind_output: str | None
+    tailwind_output: str
     tailwind_minify: bool
 
 
@@ -94,19 +96,21 @@ async def dev_server(config: DevConfig):
         if config.no_live_reload or config.no_tailwind:
             return None
 
-        host = config.live_reload_host or "localhost"
-        port = config.live_reload_port or 35729
+        host = config.live_reload_host
+        port = config.live_reload_port
 
         return live_reload_server(host, port)
 
-    def tw_cli_executor(
+    def tailwind_cli_executor(
         loop: asyncio.AbstractEventLoop,
         pool: concurrent.futures.ThreadPoolExecutor,
     ):
         if config.no_tailwind:
             return None
 
-        input_arg = f"-i {config.tailwind_input}"
+        input_arg = ""
+        if config.tailwind_input is not None:
+            input_arg = f"-i {config.tailwind_input}"
 
         output_arg = f"-o {config.tailwind_output}"
 
@@ -127,25 +131,18 @@ async def dev_server(config: DevConfig):
         if config.no_flask:
             return None
 
-        host_arg = (
-            "--host" + config.flask_host
-            if config.flask_host is not None
-            else ""
-        )
+        host_arg = f"--host {config.flask_host}"
 
-        port_arg = (
-            "--port" + str(config.flask_port)
-            if config.flask_port is not None
-            else ""
-        )
+        port_arg = f"--port {config.flask_port}"
 
         debug_arg = "--debug" if config.flask_mode == "debug" else ""
 
-        exclude_patterns = ["*/**/dev.py", "*/**/install_dev_mode.py"]
+        exclude_patterns: list[str] = list(FLASK_BASE_EXCLUDE_PATTERNS)
         if config.flask_exclude_patterns is not None:
             exclude_patterns.extend(config.flask_exclude_patterns)
+
         exclude_patterns_arg = (
-            f'--exclude-patterns {";".join(exclude_patterns)}'
+            f"--exclude-patterns {';'.join(exclude_patterns)}"
         )
 
         cmd = f"\
@@ -162,7 +159,7 @@ async def dev_server(config: DevConfig):
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         maybe_future_like = (
             live_reload_coroutine(),
-            tw_cli_executor(loop, pool),
+            tailwind_cli_executor(loop, pool),
             flask_server_executor(loop, pool),
         )
 
@@ -170,31 +167,60 @@ async def dev_server(config: DevConfig):
             future for future in maybe_future_like if future is not None
         )
 
+        pkgprint("Starting dev server...")
+
         _ = await asyncio.gather(*futures, return_exceptions=True)
 
 
-def dev(cli: argparse.Namespace) -> None:
-    _ = Config.from_pyproject_toml()
+def dev(cli_args: argparse.Namespace) -> int:
+    project_config = Config.from_pyproject_toml()
+
+    no_live_reload = cli_args.no_live_reload
+    live_reload_host = (
+        cli_args.live_reload_host or project_config.live_reload_host
+    )
+    live_reload_port = (
+        cli_args.live_reload_port or project_config.live_reload_port
+    )
+
+    no_flask = cli_args.no_flask
+    flask_host = cli_args.flask_host or project_config.flask_host
+    flask_port = cli_args.flask_port or project_config.flask_port
+    flask_mode = cli_args.flask_mode
+    flask_exclude_patterns = (
+        cli_args.flask_exclude_patterns
+        or project_config.flask_exclude_patterns
+    )
+
+    no_tailwind = cli_args.no_tailwind
+    tailwind_input = (
+        cli_args.tailwind_input or project_config.full_globalcss_file
+    )
+    tailwind_output = (
+        cli_args.tailwind_output or project_config.full_tailwind_minified_file
+    )
+    tailwind_minify = cli_args.tailwind_minify
 
     dev_config = DevConfig(
-        no_live_reload=cli.no_live_reload,
-        live_reload_host=cli.live_reload_host,
-        live_reload_port=cli.live_reload_port,
-        no_flask=cli.no_flask,
-        flask_host=cli.flask_host,
-        flask_port=cli.flask_port,
-        flask_mode=cli.flask_mode,
-        flask_exclude_patterns=cli.flask_exclude_patterns,
-        no_tailwind=cli.no_tailwind,
-        tailwind_input=cli.tailwind_input,
-        tailwind_output=cli.tailwind_output,
-        tailwind_minify=cli.tailwind_minify,
+        no_live_reload=no_live_reload,
+        live_reload_host=live_reload_host,
+        live_reload_port=live_reload_port,
+        no_flask=no_flask,
+        flask_host=flask_host,
+        flask_port=flask_port,
+        flask_mode=flask_mode,
+        flask_exclude_patterns=flask_exclude_patterns,
+        no_tailwind=no_tailwind,
+        tailwind_input=tailwind_input,
+        tailwind_output=tailwind_output,
+        tailwind_minify=tailwind_minify,
     )
 
     asyncio.run(dev_server(dev_config))
+    return 0
 
 
-def _add_cli_arguments(parser: argparse.ArgumentParser) -> None:
+def add_command_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--no-live-reload",
         dest="no_live_reload",
@@ -244,23 +270,22 @@ def _add_cli_arguments(parser: argparse.ArgumentParser) -> None:
         dest="flask_mode",
         choices=("debug", "no-debug"),
         default="debug",
-        help="If debug mode is enabled, the flask server will be started with --debug flag. Default: debug.",  # noqa: E501
+        help="If debug mode is enabled, the flask server will be started with --debug flag. Default: debug.",
     )
     parser.add_argument(
         "--flask-exclude-patterns",
         dest="flask_exclude_patterns",
         type=str,
         nargs="+",
-        help="File exclude patterns for flask server. Base: */**/dev.py */**/install_dev_mode.py",  # noqa: E501
+        help="File exclude patterns for flask server. Base: */**/dev.py",
     )
 
     parser.add_argument(
-        "-nt",
         "--no-tailwind",
         dest="no_tailwind",
         action="store_true",
         default=False,
-        help="Disable tailwindcss generation. If tailwindcss is disabled the live reload server will not be started.",  # noqa: E501
+        help="Disable tailwindcss generation. If tailwindcss is disabled the live reload server will not be started.",
     )
     parser.add_argument(
         "-ti",
@@ -286,22 +311,22 @@ def _add_cli_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_dev_command(
+def add_command(
     subparser: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
     parser = subparser.add_parser(
         name="dev",
         description="""
-            Extended dev mode for flask apps.
-            By default runs the flask app in debug mode,
-            tailwindcss in watch mode and live reload server.
+        Extended dev mode for flask apps.
+        By default runs the flask app in debug mode,
+        tailwindcss in watch mode and live reload server.
         """,
         help="Run a development server.",
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )
 
-    _add_cli_arguments(parser)
+    add_command_args(parser)
 
 
 def main(args: Sequence[str] | None = None) -> int:
@@ -314,13 +339,12 @@ def main(args: Sequence[str] | None = None) -> int:
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )
-    _add_cli_arguments(parser)
+
+    add_command_args(parser)
 
     parsed_args = parser.parse_args(args)
 
-    dev(parsed_args)
-
-    return 0
+    return dev(parsed_args)
 
 
 if __name__ == "__main__":
