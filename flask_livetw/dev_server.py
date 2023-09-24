@@ -80,8 +80,8 @@ class DevConfig:
     live_reload_port: int
 
     no_flask: bool
-    flask_host: str
-    flask_port: int
+    flask_host: str | None
+    flask_port: int | None
     flask_mode: str
     flask_exclude_patterns: Sequence[str] | None
 
@@ -131,9 +131,13 @@ async def dev_server(config: DevConfig):
         if config.no_flask:
             return None
 
-        host_arg = f"--host {config.flask_host}"
+        host_arg = ""
+        if config.flask_host is not None:
+            host_arg = f"--host {config.flask_host}"
 
-        port_arg = f"--port {config.flask_port}"
+        port_arg = ""
+        if config.flask_port is not None:
+            port_arg = f"--port {config.flask_port}"
 
         debug_arg = "--debug" if config.flask_mode == "debug" else ""
 
@@ -173,7 +177,15 @@ async def dev_server(config: DevConfig):
 
 
 def dev(cli_args: argparse.Namespace) -> int:
-    project_config = Config.from_pyproject_toml()
+    project_config = Config.try_from_pyproject_toml()
+    if project_config is None:
+        pkgprint(
+            "Project config not found. Dev server not started.",
+        )
+        pkgprint(
+            "Try checking your current working directory or running 'flask-livetw init' to configure the project."
+        )
+        return 1
 
     no_live_reload = cli_args.no_live_reload
     live_reload_host = (
@@ -197,7 +209,7 @@ def dev(cli_args: argparse.Namespace) -> int:
         cli_args.tailwind_input or project_config.full_globalcss_file
     )
     tailwind_output = (
-        cli_args.tailwind_output or project_config.full_tailwind_minified_file
+        cli_args.tailwind_output or project_config.full_tailwind_file
     )
     tailwind_minify = cli_args.tailwind_minify
 
@@ -332,9 +344,9 @@ def add_command(
 def main(args: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="""
-            Extended dev mode for flask apps.
-            By default runs the flask app in debug mode,
-            tailwindcss in watch mode and live reload server.
+        Extended dev mode for flask apps.
+        By default runs the flask app in debug mode,
+        tailwindcss in watch mode and live reload server.
         """,
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,

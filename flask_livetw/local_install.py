@@ -8,7 +8,7 @@ import subprocess
 from typing import Sequence
 
 from flask_livetw.config import Config, ask_project_layout
-from flask_livetw.util import PKG_PREFIX, Term, load_resource, pkgprint
+from flask_livetw.util import PKG_PP, Term, load_resource, pkgprint
 
 DEV_DEPENDENCIES = "pytailwindcss python-dotenv websockets"
 
@@ -229,9 +229,7 @@ def check_requirements() -> int:
     pkgprint("Checking requirements...")
     cwd = os.getcwd()
     pkgprint(f"Current working directory: {Term.C}{cwd}{Term.END}")
-    continue_install = Term.confirm(
-        f"{Term.M}[{PKG_PREFIX}]{Term.END}Is this your project root?"
-    )
+    continue_install = Term.confirm(f"{PKG_PP}Is this your project root?")
 
     if not continue_install:
         pkgprint("Change cwd and start again. Modding canceled")
@@ -251,7 +249,7 @@ def check_requirements() -> int:
         pkgprint(f"python --version: {Term.C}{version}{Term.END}")
 
         continue_install = Term.confirm(
-            f"{PKG_PREFIX} Continue with this version?"
+            f"{PKG_PP} Continue with this version?"
         )
         if not continue_install:
             pkgprint("Change python version and start again. Modding canceled")
@@ -355,9 +353,11 @@ def add_command(
     parser = subparser.add_parser(
         name="local_install",
         description="""
-            Mods a Flask app to use TailwindCSS in a dev server like manner.
+        Install flask-livetw locally
+        (adds dev dependencies, configures tailwindcss,
+        adds dev scripts and updates root layout file).
         """,
-        help="Mods the project.",
+        help="Install flask-livetw as a local script.",
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )
@@ -368,9 +368,9 @@ def add_command(
 def main(args: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="""
-            Install flask-livetw locally
-            (adds dev dependencies, configures tailwindcss,
-            adds dev scripts and updates root layout file).
+        Install flask-livetw locally
+        (adds dev dependencies, configures tailwindcss,
+        adds dev scripts and updates root layout file).
         """,
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,

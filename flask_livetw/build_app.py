@@ -44,8 +44,8 @@ def build(cli_args: argparse.Namespace) -> int:
     config = Config.from_pyproject_toml()
 
     build_config = BuildConfig(
-        input=cli_args.input or config.globalcss_file,
-        output=cli_args.output or config.tailwind_minified_file,
+        input=cli_args.input or config.full_globalcss_file,
+        output=cli_args.output or config.full_tailwind_minified_file,
         minify=cli_args.minify,
     )
 
@@ -94,7 +94,9 @@ def add_command(
 
 def main(args: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Build the tailwindcss of the project as a single css file.",
+        description="""
+        Build the tailwindcss of the project as a single css file.
+        """,
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )

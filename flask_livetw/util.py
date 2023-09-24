@@ -5,7 +5,7 @@ import os
 import platform
 from typing import Callable, Union
 
-PKG_PREFIX = "livetw"
+PKG_PPN = "livetw"
 
 STATIC_PATH = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "resources"
@@ -128,5 +128,8 @@ class Term:
             dir = input(message).strip()
 
 
+PKG_PP = f"{Term.M}[{PKG_PPN}]{Term.END}"
+
+
 def pkgprint(*values: object, end: str = "\n", sep: str = " ") -> None:
-    print(f"{Term.M}{PKG_PREFIX}{Term.END}", *values, end=end, sep=sep)
+    print(f"{PKG_PP}", *values, end=end, sep=sep)

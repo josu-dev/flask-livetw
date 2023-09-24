@@ -102,7 +102,6 @@ def configure_tailwind(content_glob: str) -> int:
         with open(TAILWIND_CONFIG.name, "w") as f:
             f.write(config)
 
-        Term.info("Tailwindcss configuration file updated")
         pkgprint("Tailwindcss configured")
         return 0
 
@@ -111,7 +110,6 @@ def configure_tailwind(content_glob: str) -> int:
     with open(TAILWIND_CONFIG.name, "w") as f:
         f.write(config)
 
-    Term.info("Tailwindcss configuration file created")
     pkgprint("Tailwindcss configured")
     return 0
 
@@ -131,8 +129,13 @@ def generate_files(
         with open(live_reload_file, "w") as f:
             f.write(LIVE_RELOAD_SCRIPT.content)
 
-    with open(globalcss_file, "w") as f:
-        f.write(GLOBAL_CSS.content)
+    try:
+        with open(globalcss_file, "w") as f:
+            f.write(GLOBAL_CSS.content)
+    except FileNotFoundError:
+        os.makedirs(os.path.dirname(globalcss_file), exist_ok=True)
+        with open(globalcss_file, "w") as f:
+            f.write(GLOBAL_CSS.content)
 
     pkgprint("Files generated")
 
@@ -203,8 +206,11 @@ def update_gitignore(static_folder: str, tailwind_file: str) -> None:
 
 
 def initialize(config: Config, gitignore: bool) -> int:
-    pkgprint("Initializing flask-livetw...")
+    Term.blank()
+    pkgprint("Initializing flask-livetw 🚀...")
 
+    Term.blank()
+    pkgprint("Updating pyproject.toml...")
     code = update_pyproject_toml(config)
     if code != 0:
         return code
@@ -251,7 +257,8 @@ def init(cli: argparse.Namespace) -> int:
     if cli.default:
         init_config = Config.default()
     else:
-        init_config = ask_project_layout(app_source=cli.flask_root)
+        pkgprint("Describe your project layout:")
+        init_config = ask_project_layout()
 
     return initialize(init_config, gitignore=cli.gitignore)
 

@@ -4,7 +4,8 @@
     "editor.tabSize": 4
   },
   "files.exclude": {
-    "**/__pycache__": true
+    "**/__pycache__": true,
+    "**/.venv": true
   },
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,

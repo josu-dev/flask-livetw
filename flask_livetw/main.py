@@ -36,7 +36,7 @@ def main(args: Sequence[str] | None = None) -> int:
     if parsed_args.command == "build":
         return build_app.build(parsed_args)
 
-    if parsed_args.commad == "init":
+    if parsed_args.command == "init":
         return initialize.init(parsed_args)
 
     if parsed_args.command == "local_install":
