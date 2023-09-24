@@ -1,98 +1,55 @@
 # Flask live tailwindcss
 
-A simple package for adding a dev server to your flask app that automatically compiles your tailwindcss of the templates on save and reloads your browser to sync the changes.
-
-> **Note:** This package is intended to use with [poetry](https://python-poetry.org/). If you are not using poetry, you can still use this package by installing the dependencies manually.
+A simple package for adding a dev server to your flask app that automatically compiles the tailwindcss of the templates on file save and triggers a browser reload to sync the changes on the fly.
 
 
-## Integrate with poetry
-
-### Installation
+## Installation
 
 ```bash
+# using poetry
 poetry add --group=dev flask-livetw
-```
 
-### Initialization
-
-Simply go to your project root folder, run the following command and follow along the steps.
-
-```bash
-poetry run flask-livetw
-```
-
-> **Note 1:** If want to skip the questions, you can use the `-Y` or `--yes` flag.
->
-> **Note 2:** If you want to use default values for the setup, you can use the `-D` or `--default` flag.
->
-> **Note 3:** You can use the `-h` or `--help` flag to see the available options.
-
-## Integrate with pip
-
-### Installation
-
-```bash
+# using pip
 pip install flask-livetw
 ```
 
-### Initialization
 
-Simply go to your project root folder, run the following command and follow along the steps.
+## Initialization
 
-```bash
-python -m flask_livetw
-```
-
-After the initialization, you need to install the dependencies manually.
+To start using this package, simply go to your project root folder, run the following command and follow along the steps.
 
 ```bash
-pip install pytailwindcss python-dotenv websockets
+# using poetry
+poetry shell
+flask-livetw init
+
+# using pip
+"activate your virtual environment like you normally do"
+flask-livetw init
 ```
 
+> **Note 1:** To skip requirements check use the `-Y` or `--yes` flag.
+>
+> **Note 2:** To use default values for the initialization use the `-D` or `--default` flag.
 
-
-## Usage
-
-### Development
-
-When developing your app, you can use the following command to start the dev server.
-
-```bash
-./dev.py dev
-```
-
-> **Note:** You can use the `-h` or `--help` flag to see the available options.
-
-### Building
-
-When you are done developing, you can use the following command to build your app.
-
-```bash
-./dev.py build
-```
-
-> **Note:** You can use the `-h` or `--help` flag to see the available options.
-
-
-## Default values
-
-### Package cli
+### Default values
 
 ```py
-DEFAULT_FLASK_ROOT = "src"
+FLASK_ROOT = "src"
 
-DEFAULT_STATIC_FOLDER = "src/static"
+STATIC_FOLDER = "src/static"
 
-DEFAULT_TEMPLATE_FOLDER = "src/templates"
-DEFAULT_TEMPLATE_GLOB = "src/templates/**/*.html"
+TEMPLATE_FOLDER = "src/templates"
+TEMPLATE_GLOB = "src/templates/**/*.html"
+ROOT_LAYOUT_FILE = "src/templates/layout.html"
 
-DEFAULT_ROOT_LAYOUT_FILE = "src/templates/layout.html"
-DEFAULT_LIVE_RELOAD_FILE = "src/static/.dev/live_reload.js"
-DEFAULT_GLOBALCSS_FILE = ".dev/global.css"
-DEFAULT_TWCSS_FILE = "src/static/.dev/tailwindcss.css"
-DEFAULT_MINIFIED_TWCSS_FILE = "src/static/tailwindcss_min.css"
+LIVE_RELOAD_FILE = "src/static/.dev/live_reload.js"
 
-DEFAULT_UPDATE_GITIGNORE = False
+GLOBALCSS_FILE = "src/static/.dev/global.css"
+TAILWIND_FILE = "src/static/.dev/tailwind.css"
+MINIFIED_TAILWIND_FILE = "src/static/tailwind_min.css"
+
+UPDATE_GITIGNORE = False
 ```
 
 Example as file system tree:
@@ -104,37 +61,82 @@ project_root
 │   │   ├── .dev
 │   │   │   ├── global.css
 │   │   │   ├── live_reload.js
-│   │   │   └── tailwindcss.css
-│   │   ├── tailwindcss_min.css
+│   │   │   └── tailwind.css
+│   │   ├── tailwind_min.css
 │   │   ...
 │   └── templates
 │       ├── layout.html
 │       ...
 ├── .gitignore
-├── dev.py
 ├── pyproject.toml
 ...
 ```
 
-### Dev server
 
-```py
-LRWS_HOST = "127.0.0.1"
-LRWS_PORT = 5678
-TW_INPUT_PATH = "package_test/static/.dev/global.css"
-TW_OUTPUT_PATH = "src/static/.dev/tailwindcss.css"
-TW_OUTPUT_PATH_BUILD = "src/static/tailwindcss_min.css"
+## Commands
+
+In order to use the commands, you need to activate your virtual environment first.
+
+```bash
+# using poetry
+poetry shell
+
+# using pip
+"activate your virtual environment like you normally do"
 ```
+
+Each command has its own help page, you can use the `-h` or `--help` flag to see the available options.
+
+### dev
+
+```bash
+flask-livetw dev
+```
+
+By default the command starts:
+
+- a flask server in debug mode
+- a live reload websocket server
+- a tailwindcss in watch mode
+
+### build
+
+Builds the tailwindcss of the templates as a single css file.
+
+```bash
+flask-livetw build
+```
+
+By default the builded tailwindcss file will be minified.
+
+### local-install
+
+```bash
+flask-livetw local-install
+```
+
+This command creates a local script that mimics the `flask-livetw` command and installs the necessary dependencies.
+
+After the installation, you can use the `dev` and `build` commands as follows:
+
+```bash
+./dev.py dev
+./dev.py build
+```
+
 
 ## Contributing
 
 Contributions are welcome, feel free to submit a pull request or an issue.
 
-## Credits
+
+## Packages used
 
 - [pytailwindcss](https://github.com/timonweb/pytailwindcss)
 - [python-dotenv](https://github.com/theskumar/python-dotenv)
+- [tomli](https://github.com/hukkin/tomli)
 - [websockets](https://github.com/python-websockets/websockets)
+
 
 ## License
 

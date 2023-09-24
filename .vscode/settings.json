@@ -3,20 +3,15 @@
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.tabSize": 4
   },
-  "black-formatter.args": [
-    "--line-length=79"
-  ],
   "files.exclude": {
-    "**/__pycache__": true
+    "**/__pycache__": true,
+    "**/.venv": true
   },
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
   "flake8.args": [
     "--ignore=E501,W503"
-  ],
-  "isort.args": [
-    "--profile=black"
   ],
   "python.analysis.typeCheckingMode": "strict"
 }
