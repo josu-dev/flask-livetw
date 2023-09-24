@@ -88,7 +88,7 @@ class Config:
             "templates_folder", DEFAULT_FOLDER_TEMPLATE
         )
 
-        if type(base_dir) == str and base_dir != "":
+        if isinstance(base_dir, str) and base_dir != "":
             base_dir = base_dir.rstrip("/")
             full_static_folder = f"{base_dir}/{flask_root}/{static_folder}"
             full_templates_folder = (
@@ -185,11 +185,15 @@ class Config:
             pyproject = {}
 
         config = pyproject.get("tool", {})
-        if type(config) != dict:
+        if not isinstance(
+            config, dict
+        ):  # pyright: ignore[reportUnnecessaryIsInstance]
             config: dict[str, Any] = {}
 
         config = config.get("flask-livetw", {})
-        if type(config) != dict:
+        if not isinstance(
+            config, dict
+        ):  # pyright: ignore[reportUnnecessaryIsInstance]
             config = {}
 
         return Config.from_dict_with_defaults(config, base_dir)
