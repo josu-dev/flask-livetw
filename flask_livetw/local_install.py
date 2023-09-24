@@ -229,7 +229,7 @@ def check_requirements() -> int:
     pkgprint("Checking requirements...")
     cwd = os.getcwd()
     pkgprint(f"Current working directory: {Term.C}{cwd}{Term.END}")
-    continue_install = Term.confirm(f"{PKG_PP}Is this your project root?")
+    continue_install = Term.confirm(f"{PKG_PP} Is this your project root?")
 
     if not continue_install:
         pkgprint("Change cwd and start again. Modding canceled")
@@ -259,16 +259,17 @@ def check_requirements() -> int:
 
 
 def local_install(args: argparse.Namespace) -> int:
-    _ = Config.from_pyproject_toml()
-
     if not args.all_yes:
         code = check_requirements()
         if code != 0:
             return code
 
-    config = ask_project_layout()
+    config = Config.try_from_pyproject_toml()
+    if config is None:
+        config = ask_project_layout()
 
-    pkgprint("Installing flask-livetw locally 🚀...")
+    Term.blank()
+    pkgprint("Installing flask-livetw as local script 🚀...")
 
     dependancies_code = install_dev_dependencies()
     if dependancies_code > 0:
@@ -300,10 +301,10 @@ def local_install(args: argparse.Namespace) -> int:
     Term.blank()
 
     if dependancies_code == 0 and tailwind_code == 0:
-        pkgprint("Modding complete ✅")
+        pkgprint("Local install completed 🎉")
         return 0
 
-    pkgprint("Modding almost completed")
+    pkgprint("Local install almost completed")
 
     if dependancies_code != 0:
         pkgprint("Remember to install the missing dev dependencies manually")
@@ -351,11 +352,11 @@ def add_command(
     subparser: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
     parser = subparser.add_parser(
-        name="local_install",
+        name="local-install",
         description="""
-        Install flask-livetw locally
+        Install flask-livetw as a local script
         (adds dev dependencies, configures tailwindcss,
-        adds dev scripts and updates root layout file).
+        adds dev script and updates root layout file).
         """,
         help="Install flask-livetw as a local script.",
         allow_abbrev=True,
@@ -368,9 +369,9 @@ def add_command(
 def main(args: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="""
-        Install flask-livetw locally
+        Install flask-livetw as a local script
         (adds dev dependencies, configures tailwindcss,
-        adds dev scripts and updates root layout file).
+        adds dev script and updates root layout file).
         """,
         allow_abbrev=True,
         formatter_class=argparse.MetavarTypeHelpFormatter,

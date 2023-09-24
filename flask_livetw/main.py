@@ -12,7 +12,6 @@ def create_cli() -> argparse.ArgumentParser:
         description="CLI for flask-livetw commands.",
         allow_abbrev=True,
     )
-
     subparsers = parser.add_subparsers(
         title="commands",
         dest="command",
@@ -20,8 +19,11 @@ def create_cli() -> argparse.ArgumentParser:
     )
 
     dev_server.add_command(subparsers)
+
     build_app.add_command(subparsers)
+
     initialize.add_command(subparsers)
+
     local_install.add_command(subparsers)
 
     return parser
@@ -39,7 +41,7 @@ def main(args: Sequence[str] | None = None) -> int:
     if parsed_args.command == "init":
         return initialize.init(parsed_args)
 
-    if parsed_args.command == "local_install":
+    if parsed_args.command == "local-install":
         return local_install.local_install(parsed_args)
 
     return 0

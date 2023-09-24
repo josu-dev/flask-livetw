@@ -18,8 +18,8 @@ DEFAULT_TEMPLATES_GLOB = "**/*.html"
 DEFAULT_FILE_ROOT_LAYOUT = "layout.html"
 DEFAULT_FILE_LIVE_RELOAD = ".dev/live_reload.js"
 DEFAULT_FILE_GLOBALCSS = ".dev/global.css"
-DEFAULT_FILE_TAILWIND = ".dev/tailwindcss.css"
-DEFAULT_FILE_MINIFIED_TAILWIND = "tailwindcss_min.css"
+DEFAULT_FILE_TAILWIND = ".dev/tailwind.css"
+DEFAULT_FILE_MINIFIED_TAILWIND = "tailwind_min.css"
 
 DEFAULT_LIVERELOAD_HOST = "127.0.0.1"
 DEFAULT_LIVERELOAD_PORT = 5678
