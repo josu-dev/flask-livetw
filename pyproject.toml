@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flask-livetw"
-version = "0.3.1"
+version = "0.3.2"
 description = "A simple package that enables livereload and tailwindcss for flask templates."
 license = "MIT"
 authors = ["J-Josu <josue.sa.trabajos@gmail.com>"]

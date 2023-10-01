@@ -13,5 +13,5 @@ poetry.lock
 .pytest_cache/
 
 # others
-.env
+.env*
 .ignored

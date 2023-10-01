@@ -238,9 +238,15 @@ def main():
     cli_args = cli().parse_args()
 
     if cli_args.command == "build":
+        if "LIVETW_BUILD" not in os.environ:
+            os.environ["LIVETW_BUILD"] = "TRUE"
+
         return minify_tailwindcss(cli_args)
 
     if cli_args.command == "dev":
+        if "LIVETW_DEV" not in os.environ:
+            os.environ["LIVETW_DEV"] = "TRUE"
+
         asyncio.run(dev_server(cli_args))
         return 0
 
