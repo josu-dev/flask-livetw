@@ -23,6 +23,11 @@ def load_resource(name: str) -> Resource:
         return Resource(name, f.read())
 
 
+def set_default_env(name: str, value: str) -> None:
+    if name not in os.environ:
+        os.environ[name] = value
+
+
 class Term:
     if platform.system() == "Windows":
         os.system("color")

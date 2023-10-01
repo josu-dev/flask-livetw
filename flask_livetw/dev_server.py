@@ -14,7 +14,7 @@ import websockets.legacy.protocol as ws_protocol
 import websockets.server as ws_server
 
 from flask_livetw.config import Config
-from flask_livetw.util import Term, pkgprint
+from flask_livetw.util import Term, pkgprint, set_default_env
 
 FLASK_BASE_EXCLUDE_PATTERNS = ("*/**/dev.py",)
 
@@ -177,6 +177,8 @@ async def dev_server(config: DevConfig):
 
 
 def dev(cli_args: argparse.Namespace) -> int:
+    set_default_env("LIVETW_DEV", "TRUE")
+
     project_config = Config.try_from_pyproject_toml()
     if project_config is None:
         pkgprint(

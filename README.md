@@ -99,6 +99,8 @@ By default the command starts:
 - a live reload websocket server
 - a tailwindcss in watch mode
 
+During development time the enviroment variable `LIVETW_DEV` is set to `TRUE`, `os.environ["LIVETW_DEV"] == "TRUE"`. This is useful for conditional code execution.
+
 ### build
 
 Builds the tailwindcss of the templates as a single css file.
@@ -109,13 +111,15 @@ flask-livetw build
 
 By default the builded tailwindcss file will be minified.
 
+During building time the enviroment variable `LIVETW_BUILD` is set to `TRUE`, `os.environ["LIVETW_BUILD"] == "TRUE"`. This is useful for conditional code execution.
+
 ### local-install
 
 ```bash
 flask-livetw local-install
 ```
 
-This command creates a local script that mimics the `flask-livetw` command and installs the necessary dependencies.
+This command creates a local script that mimics the `flask-livetw` command and adds the necessary dependencies to your project in order to use the `dev` and `build` commands.
 
 After the installation, you can use the `dev` and `build` commands as follows:
 

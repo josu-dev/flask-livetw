@@ -7,7 +7,7 @@ import subprocess
 from typing import Sequence
 
 from flask_livetw.config import Config
-from flask_livetw.util import Term, pkgprint
+from flask_livetw.util import Term, pkgprint, set_default_env
 
 MINIFY_ON_BUILD = True
 
@@ -41,6 +41,8 @@ def minify_tailwind(config: BuildConfig) -> int:
 
 
 def build(cli_args: argparse.Namespace) -> int:
+    set_default_env("LIVETW_BUILD", "TRUE")
+
     config = Config.from_pyproject_toml()
 
     build_config = BuildConfig(
