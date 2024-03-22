@@ -1,14 +1,14 @@
-[tool.poetry]
+[project]
 name = "flask-livetw"
-version = "0.3.2"
-description = "A simple package that enables livereload and tailwindcss for flask templates."
-license = "MIT"
-authors = ["J-Josu <josue.sa.trabajos@gmail.com>"]
+version = "0.4.0"
+authors = [{ name = "Josue", email = "josue.sa.trabajos@gmail.com" }]
+description = "A simple lib that enables livereload and tailwindcss for flask templates."
 readme = "README.md"
-repository = "https://github.com/J-Josu/flask-livetw"
+license = { file = "LICENSE" }
 keywords = ["flask", "tailwindcss", "livereload", "css", "html", "template"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
   "Environment :: Console",
   "Framework :: Flask",
   "Intended Audience :: Developers",
@@ -17,26 +17,26 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Typing :: Typed",
 ]
+requires-python = ">=3.8"
+dependencies = ["pytailwindcss >= 0.2", "websockets >= 11", "tomli >= 2"]
 
+[project.urls]
+repository = "https://github.com/josu-dev/flask-livetw.git"
+issues = "https://github.com/josu-dev/flask-livetw/issues"
 
-[tool.poetry.scripts]
-flask-livetw = "flask_livetw.main:main"
-
-
-[tool.poetry.dependencies]
-python = "^3.8"
-pytailwindcss = "^0.2.0"
-websockets = "^11.0.3"
-tomli = "^2.0.1"
-
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.4.0"
+[project.scripts]
+livetw = "flask_livetw.main:main"
 
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+flask_livetw = ["resources/*"]
 
 
 [tool.black]

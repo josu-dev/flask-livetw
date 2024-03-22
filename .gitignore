@@ -6,12 +6,10 @@ __pycache__/
 # pyenv
 .python-version
 
-# poetry
+# setuptools
+*.egg-info/
 dist/
-poetry.toml
-poetry.lock
-.pytest_cache/
 
 # others
 .env*
-.ignored
+.local

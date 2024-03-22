@@ -5,12 +5,16 @@ A simple package for adding a dev server to your flask app that automatically co
 
 ## Installation
 
-```bash
-# using poetry
-poetry add --group=dev flask-livetw
+This package is available on PyPI, you can install it using `pip` or other package manager of your choice.
 
-# using pip
+```bash
 pip install flask-livetw
+```
+
+Its a good practice to add as a development dependency. You can do this by adding the package to your `requirements-dev.txt` file or the "dev dependencies" of your package manager.
+
+```txt
+flask-livetw
 ```
 
 
@@ -19,18 +23,14 @@ pip install flask-livetw
 To start using this package, simply go to your project root folder, run the following command and follow along the steps.
 
 ```bash
-# using poetry
-poetry shell
-flask-livetw init
-
-# using pip
-"activate your virtual environment like you normally do"
 flask-livetw init
 ```
 
-> **Note 1:** To skip requirements check use the `-Y` or `--yes` flag.
+> **Note 1:** Remember to activate your virtual environment if you are using one.
 >
-> **Note 2:** To use default values for the initialization use the `-D` or `--default` flag.
+> **Note 2:** To skip requirements check use the `-Y` or `--yes` flag.
+>
+> **Note 3:** To use default values for the initialization use the `-D` or `--default` flag.
 
 ### Default values
 
@@ -75,22 +75,12 @@ project_root
 
 ## Commands
 
-In order to use the commands, you need to activate your virtual environment first.
-
-```bash
-# using poetry
-poetry shell
-
-# using pip
-"activate your virtual environment like you normally do"
-```
-
 Each command has its own help page, you can use the `-h` or `--help` flag to see the available options.
 
 ### dev
 
 ```bash
-flask-livetw dev
+livetw dev
 ```
 
 By default the command starts:
@@ -106,7 +96,7 @@ During development time the enviroment variable `LIVETW_DEV` is set to `TRUE`, `
 Builds the tailwindcss of the templates as a single css file.
 
 ```bash
-flask-livetw build
+livetw build
 ```
 
 By default the builded tailwindcss file will be minified.
@@ -116,10 +106,10 @@ During building time the enviroment variable `LIVETW_BUILD` is set to `TRUE`, `o
 ### local-install
 
 ```bash
-flask-livetw local-install
+livetw local-install
 ```
 
-This command creates a local script that mimics the `flask-livetw` command and adds the necessary dependencies to your project in order to use the `dev` and `build` commands.
+This command creates a local script that mimics the `livetw` command and adds the necessary dependencies to your project in order to use the `dev` and `build` commands.
 
 After the installation, you can use the `dev` and `build` commands as follows:
 
