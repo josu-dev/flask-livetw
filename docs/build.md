@@ -25,6 +25,7 @@ python -m pip install --upgrade twine
 First, build the package:
 
 ```bash
+rm -rf dist
 python -m build
 ```
 

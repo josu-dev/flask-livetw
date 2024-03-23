@@ -182,7 +182,7 @@ async def dev_server(config: DevConfig):
 
 
 def dev(cli_args: argparse.Namespace) -> int:
-    set_default_env("LIVETW_DEV", "TRUE")
+    set_default_env("LIVETW_ENV", "development")
 
     project_config = Config.try_from_pyproject_toml()
     if project_config is None:
@@ -203,10 +203,7 @@ def dev(cli_args: argparse.Namespace) -> int:
     )
 
     no_flask = cli_args.no_flask
-    flask_app = (
-        cli_args.flask_app
-        or f"{project_config.flask_root}.{project_config.flask_app or 'app'}"
-    )
+    flask_app = cli_args.flask_app or project_config.flask_app or "app"
     flask_host = cli_args.flask_host or project_config.flask_host
     flask_port = cli_args.flask_port or project_config.flask_port
     flask_mode = cli_args.flask_mode
@@ -216,11 +213,9 @@ def dev(cli_args: argparse.Namespace) -> int:
     )
 
     no_tailwind = cli_args.no_tailwind
-    tailwind_input = (
-        cli_args.tailwind_input or project_config.full_globalcss_file
-    )
+    tailwind_input = cli_args.tailwind_input or project_config.full_global_css
     tailwind_output = (
-        cli_args.tailwind_output or project_config.full_tailwind_file
+        cli_args.tailwind_output or project_config.full_tailwind_dev
     )
     tailwind_minify = cli_args.tailwind_minify
 

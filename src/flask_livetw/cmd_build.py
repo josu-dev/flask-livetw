@@ -41,13 +41,13 @@ def minify_tailwind(config: BuildConfig) -> int:
 
 
 def build(cli_args: argparse.Namespace) -> int:
-    set_default_env("LIVETW_BUILD", "TRUE")
+    set_default_env("LIVETW_ENV", "building")
 
     config = Config.from_pyproject_toml()
 
     build_config = BuildConfig(
-        input=cli_args.input or config.full_globalcss_file,
-        output=cli_args.output or config.full_production_css_file,
+        input=cli_args.input or config.full_global_css,
+        output=cli_args.output or config.full_tailwind_prod,
         minify=cli_args.minify,
     )
 

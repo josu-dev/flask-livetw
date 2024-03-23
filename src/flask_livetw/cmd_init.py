@@ -12,10 +12,10 @@ from flask_livetw.config import (
 )
 from flask_livetw.util import PKG_PP, Term, load_resource, pkgprint
 
-LIVE_RELOAD_SCRIPT = load_resource("live_reload.js")
-TAILWIND_CONFIG = load_resource("tailwind.config.js")
 GLOBAL_CSS = load_resource("global.css")
 LAYOUT_TEMPLATE = load_resource("layout.html")
+LIVE_RELOAD_SCRIPT = load_resource("live_reload.js")
+TAILWIND_CONFIG = load_resource("tailwind.config.js")
 
 
 def generate_tailwind_config(content_glob: str) -> str:
@@ -51,20 +51,20 @@ def add_content_glob(config: str, content_glob: str) -> str | None:
 
 
 def generate_live_reload_template(
-    live_reload_file: str, tailwind_file: str, tailwind_min_file: str
+    live_reload_file: str, tailwind_dev_file: str, tailwind_prod_file: str
 ) -> str:
     return (
         """
   {% if config.LIVETW_DEV %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename=\'"""  # noqa: E501
-        + tailwind_file
+        + tailwind_dev_file
         + """\') }}">
     <script src="{{ url_for('static', filename=\'"""
         + live_reload_file
         + """\') }}" defer></script>
   {% else %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename=\'"""  # noqa: E501
-        + tailwind_min_file
+        + tailwind_prod_file
         + """\') }}">
   {% endif %}
 """
@@ -72,12 +72,12 @@ def generate_live_reload_template(
 
 
 def generate_layout_template(
-    live_reload_file: str, tailwind_file: str, tailwind_min_file: str
+    live_reload_file: str, tailwind_dev_file: str, tailwind_prod_file: str
 ) -> str:
     return LAYOUT_TEMPLATE.content.replace(
         "{live_reload_template_placeholder}",
         generate_live_reload_template(
-            live_reload_file, tailwind_file, tailwind_min_file
+            live_reload_file, tailwind_dev_file, tailwind_prod_file
         ),
     )
 
@@ -154,7 +154,7 @@ def update_layout(
             layout = f.read()
             if "</head>" not in layout:
                 Term.error(
-                    "Root layour is malformed, the </head> tag is missing. \
+                    "Base layout is malformed, the </head> tag is missing. \
                         Please check your root layout file."
                 )
                 return 1
@@ -170,7 +170,7 @@ def update_layout(
             f.write(layout)
             f.truncate()
 
-            pkgprint("Root layout file updated")
+            pkgprint("Base layout file updated")
             return 0
     except FileNotFoundError as e:
         Term.warn(e)
@@ -182,17 +182,28 @@ def update_layout(
                 )
             )
 
-    pkgprint("Root layout file created")
+    pkgprint("Base layout file created")
     return 0
 
 
 def initialize(config: Config) -> int:
     Term.blank()
-    pkgprint("Initializing flask-livetw 🚀...")
+    pkgprint("Initializing flask-livetw 😎")
 
     Term.blank()
     pkgprint("Updating pyproject.toml...")
-    code = update_pyproject_toml(config)
+    code = update_pyproject_toml(
+        config,
+        keys=[
+            "flask_root",
+            "static_folder",
+            "templates_folder",
+            "templates_glob",
+            "base_layout",
+            "livetw_folder",
+            "flask_app",
+        ],
+    )
     if code != 0:
         return code
     pkgprint("pyproject.toml updated")
@@ -202,15 +213,15 @@ def initialize(config: Config) -> int:
         return tailwind_code
 
     generate_files(
-        config.full_live_reload_file,
-        config.full_globalcss_file,
+        config.full_live_reload,
+        config.full_global_css,
     )
 
     code = update_layout(
-        config.full_root_layout_file,
-        config.livetw_folder + "/" + config.live_reload_file,
-        config.livetw_folder + "/" + config.tailwind_file,
-        config.production_css_file,
+        config.full_base_layout,
+        config.livetw_folder + "/" + config.live_reload,
+        config.livetw_folder + "/" + config.tailwind_dev,
+        config.tailwind_prod,
     )
     if code != 0:
         return code
@@ -233,8 +244,9 @@ def initialize(config: Config) -> int:
 def init(cli: argparse.Namespace) -> int:
     project_config = Config.try_from_pyproject_toml()
     if project_config is not None:
+        pkgprint("flask-livetw is already initialized in this project")
         overwite = Term.confirm(
-            f"{PKG_PP} flask-livetw is already initialized in this project. Do you want to overwrite the existing configuration?",
+            f"{PKG_PP} Do you want to overwrite the existing configuration?",
         )
         if not overwite:
             pkgprint("Initialization cancelled")
@@ -251,7 +263,7 @@ def init(cli: argparse.Namespace) -> int:
 
 def add_command_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
-        "-D",
+        "-d",
         "--default",
         dest="default",
         action="store_true",
