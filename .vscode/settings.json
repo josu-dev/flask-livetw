@@ -3,9 +3,9 @@
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.tabSize": 4
   },
+  "editor.tabSize": 2,
   "files.exclude": {
-    "**/__pycache__": true,
-    "**/.venv": true
+    "**/__pycache__": true
   },
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,

@@ -3,12 +3,12 @@ from __future__ import annotations
 import argparse
 from typing import Sequence
 
-from flask_livetw import build_app, dev_server, initialize, local_install
+from flask_livetw import cmd_build, cmd_dev, cmd_init
 
 
 def create_cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="flask-livetw",
+        prog="livetw",
         description="CLI for flask-livetw commands.",
         allow_abbrev=True,
     )
@@ -18,13 +18,11 @@ def create_cli() -> argparse.ArgumentParser:
         required=True,
     )
 
-    dev_server.add_command(subparsers)
+    cmd_build.add_command(subparsers)
 
-    build_app.add_command(subparsers)
+    cmd_dev.add_command(subparsers)
 
-    initialize.add_command(subparsers)
-
-    local_install.add_command(subparsers)
+    cmd_init.add_command(subparsers)
 
     return parser
 
@@ -33,16 +31,13 @@ def main(args: Sequence[str] | None = None) -> int:
     parsed_args = create_cli().parse_args(args)
 
     if parsed_args.command == "dev":
-        return dev_server.dev(parsed_args)
+        return cmd_dev.dev(parsed_args)
 
     if parsed_args.command == "build":
-        return build_app.build(parsed_args)
+        return cmd_build.build(parsed_args)
 
     if parsed_args.command == "init":
-        return initialize.init(parsed_args)
-
-    if parsed_args.command == "local-install":
-        return local_install.local_install(parsed_args)
+        return cmd_init.init(parsed_args)
 
     return 0
 

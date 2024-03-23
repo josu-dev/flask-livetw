@@ -1,0 +1,3 @@
+pytailwindcss>=0.2
+websockets>=11
+tomli>=2
