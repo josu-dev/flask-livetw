@@ -16,25 +16,27 @@ DEFAULT_FOLDER_TEMPLATE = "templates"
 DEFAULT_TEMPLATES_GLOB = "**/*.html"
 
 DEFAULT_FILE_ROOT_LAYOUT = "layout.html"
-DEFAULT_FILE_LIVE_RELOAD = ".dev/live_reload.js"
-DEFAULT_FILE_GLOBALCSS = ".dev/global.css"
-DEFAULT_FILE_TAILWIND = ".dev/tailwind.css"
-DEFAULT_FILE_MINIFIED_TAILWIND = "tailwind_min.css"
+
+DEFAULT_FOLDER_LIVETW = ".dev"
+DEFAULT_FILE_LIVERELOAD = "live_reload.js"
+DEFAULT_FILE_GLOBALCSS = "global.css"
+DEFAULT_FILE_TAILWIND = "tailwind.css"
+DEFAULT_FILE_PRODUCTION_CSS = "app_prod.css"
 
 DEFAULT_LIVERELOAD_HOST = "127.0.0.1"
 DEFAULT_LIVERELOAD_PORT = 5678
 
+DEFAULT_FLASK_APP = "app"
 DEFAULT_FLASK_HOST = None
 DEFAULT_FLASK_PORT = None
-DEFAULT_FLASK_EXCLUDE_PATTERNS = []
+DEFAULT_FLASK_EXCLUDE_PATTERNS: list[str] = []
 
 
 def get_pyproject_toml(base_dir: str | None = None) -> dict[str, Any] | None:
-    path = (
-        f"{base_dir.strip()}/pyproject.toml"
-        if base_dir and base_dir.strip()
-        else "pyproject.toml"
-    )
+    path = "pyproject.toml"
+    if base_dir is not None and base_dir.strip():
+        path = f"{base_dir.strip()}/{path}"
+
     try:
         with open(path, "rb") as f:
             return tomli.load(f)
@@ -55,25 +57,26 @@ class Config:
 
     templates_folder: str
     full_templates_folder: str
-
     templates_glob: str
     full_templates_glob: str
     root_layout_file: str
     full_root_layout_file: str
 
+    livetw_folder: str
+    full_livetw_folder: str
     live_reload_file: str
     full_live_reload_file: str
-
     globalcss_file: str
     full_globalcss_file: str
     tailwind_file: str
     full_tailwind_file: str
-    tailwind_minified_file: str
-    full_tailwind_minified_file: str
+    production_css_file: str
+    full_production_css_file: str
 
     live_reload_host: str
     live_reload_port: int
 
+    flask_app: str | None
     flask_host: str | None
     flask_port: int | None
     flask_exclude_patterns: list[str] | None
@@ -87,6 +90,7 @@ class Config:
         templates_folder = src_dict.get(
             "templates_folder", DEFAULT_FOLDER_TEMPLATE
         )
+        livetw_folder = src_dict.get("livetw_folder", DEFAULT_FOLDER_LIVETW)
 
         if isinstance(base_dir, str) and base_dir != "":
             base_dir = base_dir.rstrip("/")
@@ -102,13 +106,16 @@ class Config:
         root_layout_file = src_dict.get(
             "root_layout_file", DEFAULT_FILE_ROOT_LAYOUT
         )
+
+        full_livetw_folder = f"{full_static_folder}/{livetw_folder}"
+
         live_reload_file = src_dict.get(
-            "live_reload_file", DEFAULT_FILE_LIVE_RELOAD
+            "live_reload_file", DEFAULT_FILE_LIVERELOAD
         )
         globalcss_file = src_dict.get("globalcss_file", DEFAULT_FILE_GLOBALCSS)
         tailwind_file = src_dict.get("tailwind_file", DEFAULT_FILE_TAILWIND)
-        tailwind_minified_file = src_dict.get(
-            "tailwind_minified_file", DEFAULT_FILE_MINIFIED_TAILWIND
+        production_css_file = src_dict.get(
+            "production_css_file", DEFAULT_FILE_PRODUCTION_CSS
         )
         live_reload_host = src_dict.get(
             "live_reload_host", DEFAULT_LIVERELOAD_HOST
@@ -116,6 +123,7 @@ class Config:
         live_reload_port = src_dict.get(
             "live_reload_port", DEFAULT_LIVERELOAD_PORT
         )
+        flask_app = src_dict.get("flask_app", DEFAULT_FLASK_APP)
         flask_host = src_dict.get("flask_host", DEFAULT_FLASK_HOST)
         flask_port = src_dict.get("flask_port", DEFAULT_FLASK_PORT)
         flask_exclude_patterns = src_dict.get(
@@ -132,16 +140,19 @@ class Config:
             "full_templates_glob": f"{full_templates_folder}/{templates_glob}",
             "root_layout_file": root_layout_file,
             "full_root_layout_file": f"{full_templates_folder}/{root_layout_file}",
+            "livetw_folder": livetw_folder,
+            "full_livetw_folder": full_livetw_folder,
             "live_reload_file": live_reload_file,
-            "full_live_reload_file": f"{full_static_folder}/{live_reload_file}",
+            "full_live_reload_file": f"{full_livetw_folder}/{live_reload_file}",
             "globalcss_file": globalcss_file,
-            "full_globalcss_file": f"{full_static_folder}/{globalcss_file}",
+            "full_globalcss_file": f"{full_livetw_folder}/{globalcss_file}",
             "tailwind_file": tailwind_file,
-            "full_tailwind_file": f"{full_static_folder}/{tailwind_file}",
-            "tailwind_minified_file": tailwind_minified_file,
-            "full_tailwind_minified_file": f"{full_static_folder}/{tailwind_minified_file}",
+            "full_tailwind_file": f"{full_livetw_folder}/{tailwind_file}",
+            "production_css_file": production_css_file,
+            "full_production_css_file": f"{full_static_folder}/{production_css_file}",
             "live_reload_host": live_reload_host,
             "live_reload_port": live_reload_port,
+            "flask_app": flask_app,
             "flask_host": flask_host,
             "flask_port": flask_port,
             "flask_exclude_patterns": flask_exclude_patterns,
@@ -229,74 +240,82 @@ def update_pyproject_toml(config: Config) -> int:
         Term.info("Verify that the file is valid TOML")
         return 1
 
-    ppconfig = pyproject.get("tool", {}).get("flask-livetw", {})
+    user_config = pyproject.get("tool", {}).get("flask-livetw", {})
 
-    new_config = """\n[tool.flask-livetw]"""
+    new_config = ("\n" if len(pyproject) else "") + "[tool.flask-livetw]"
     new_config = add_field(
-        ppconfig, "flask_root", config, DEFAULT_FLASK_ROOT, new_config
+        user_config, "flask_root", config, DEFAULT_FLASK_ROOT, new_config
     )
     new_config = add_field(
-        ppconfig, "static_folder", config, DEFAULT_FOLDER_STATIC, new_config
+        user_config, "static_folder", config, DEFAULT_FOLDER_STATIC, new_config
     )
     new_config = add_field(
-        ppconfig,
+        user_config,
         "templates_folder",
         config,
         DEFAULT_FOLDER_TEMPLATE,
         new_config,
     )
     new_config = add_field(
-        ppconfig, "templates_glob", config, DEFAULT_TEMPLATES_GLOB, new_config
+        user_config,
+        "templates_glob",
+        config,
+        DEFAULT_TEMPLATES_GLOB,
+        new_config,
     )
     new_config = add_field(
-        ppconfig,
+        user_config,
         "root_layout_file",
         config,
         DEFAULT_FILE_ROOT_LAYOUT,
         new_config,
     )
     new_config = add_field(
-        ppconfig,
+        user_config,
+        "livetw_folder",
+        config,
+        DEFAULT_FOLDER_LIVETW,
+        new_config,
+    )
+    new_config = add_field(
+        user_config,
         "live_reload_file",
         config,
-        DEFAULT_FILE_LIVE_RELOAD,
+        DEFAULT_FILE_LIVERELOAD,
         new_config,
     )
     new_config = add_field(
-        ppconfig, "globalcss_file", config, DEFAULT_FILE_GLOBALCSS, new_config
-    )
-    new_config = add_field(
-        ppconfig, "tailwind_file", config, DEFAULT_FILE_TAILWIND, new_config
-    )
-    new_config = add_field(
-        ppconfig,
-        "tailwind_minified_file",
+        user_config,
+        "production_css_file",
         config,
-        DEFAULT_FILE_MINIFIED_TAILWIND,
+        DEFAULT_FILE_PRODUCTION_CSS,
         new_config,
     )
     new_config = add_field(
-        ppconfig,
+        user_config,
         "live_reload_host",
         config,
         DEFAULT_LIVERELOAD_HOST,
         new_config,
     )
     new_config = add_field(
-        ppconfig,
+        user_config,
         "live_reload_port",
         config,
         DEFAULT_LIVERELOAD_PORT,
         new_config,
     )
     new_config = add_field(
-        ppconfig, "flask_host", config, DEFAULT_FLASK_HOST, new_config
+        user_config, "flask_app", config, DEFAULT_FLASK_APP, new_config
     )
     new_config = add_field(
-        ppconfig, "flask_port", config, DEFAULT_FLASK_PORT, new_config
+        user_config, "flask_host", config, DEFAULT_FLASK_HOST, new_config
     )
     new_config = add_field(
-        ppconfig,
+        user_config, "flask_port", config, DEFAULT_FLASK_PORT, new_config
+    )
+    new_config = add_field(
+        user_config,
         "flask_exclude_patterns",
         config,
         DEFAULT_FLASK_EXCLUDE_PATTERNS,
@@ -329,62 +348,48 @@ def ask_project_layout(app_source: str | None = None) -> Config:
     flask_root = app_source
     if flask_root is None or flask_root == "":
         flask_root = Term.ask_dir(
-            f"{PKG_PP} Flask app root (relative to {Term.C}cwd/{Term.END}) [{DEFAULT_FLASK_ROOT}] ",
+            f"{PKG_PP} Flask app root {Term.C}cwd/{Term.END} [{DEFAULT_FLASK_ROOT}] ",
             default=DEFAULT_FLASK_ROOT,
         )
 
     static_folder = Term.ask_dir(
-        f"{PKG_PP} Static folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_FOLDER_STATIC}] ",
+        f"{PKG_PP} Static folder {Term.C}cwd/{flask_root}/{Term.END} [{DEFAULT_FOLDER_STATIC}] ",
         flask_root,
         DEFAULT_FOLDER_STATIC,
     )
 
     templates_folder = Term.ask_dir(
-        f"{PKG_PP} Templates folder (relative to {Term.C}cwd/{flask_root}/{Term.END}) [{DEFAULT_FOLDER_TEMPLATE}] ",
+        f"{PKG_PP} Templates folder {Term.C}cwd/{flask_root}/{Term.END} [{DEFAULT_FOLDER_TEMPLATE}] ",
         flask_root,
         DEFAULT_FOLDER_TEMPLATE,
     )
 
     templates_glob = (
         Term.ask(
-            f"{PKG_PP} Templates glob (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_TEMPLATES_GLOB}] ",
+            f"{PKG_PP} Templates glob {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END} [{DEFAULT_TEMPLATES_GLOB}] ",
         )
         or DEFAULT_TEMPLATES_GLOB
     )
 
     root_layout_file = (
         Term.ask(
-            f"{PKG_PP} Root layout file (relative to {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END}) [{DEFAULT_FILE_ROOT_LAYOUT}] ",
+            f"{PKG_PP} Root layout file {Term.C}cwd/{flask_root}/{templates_folder}/{Term.END} [{DEFAULT_FILE_ROOT_LAYOUT}] ",
         )
         or DEFAULT_FILE_ROOT_LAYOUT
     )
 
-    live_reload_file = (
+    livetw_folder = (
         Term.ask(
-            f"{PKG_PP} Live reload file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_FILE_LIVE_RELOAD}] ",
+            f"{PKG_PP} Livetw folder {Term.C}cwd/{flask_root}/{static_folder}/{Term.END} [{DEFAULT_FOLDER_LIVETW}] ",
         )
-        or DEFAULT_FILE_LIVE_RELOAD
+        or DEFAULT_FOLDER_LIVETW
     )
 
-    globalcss_file = (
+    flask_app = (
         Term.ask(
-            f"{PKG_PP} Global css file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_FILE_GLOBALCSS}] ",
+            f"{PKG_PP} Flask entry point {Term.C}cwd/{flask_root}/{Term.END} [{DEFAULT_FLASK_APP}] ",
         )
-        or DEFAULT_FILE_GLOBALCSS
-    )
-
-    tailwind_file = (
-        Term.ask(
-            f"{PKG_PP} TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_FILE_TAILWIND}] ",
-        )
-        or DEFAULT_FILE_TAILWIND
-    )
-
-    tailwind_minified_file = (
-        Term.ask(
-            f"{PKG_PP} Minified TailwindCSS file (relative to {Term.C}cwd/{flask_root}/{static_folder}/{Term.END}) [{DEFAULT_FILE_MINIFIED_TAILWIND}] ",
-        )
-        or DEFAULT_FILE_MINIFIED_TAILWIND
+        or DEFAULT_FLASK_APP
     )
 
     if not flask_root or flask_root == ".":
@@ -394,6 +399,10 @@ def ask_project_layout(app_source: str | None = None) -> Config:
         full_static_folder = f"{flask_root}/{static_folder}"
         full_templates_folder = f"{flask_root}/{templates_folder}"
 
+    full_templates_glob = f"{full_templates_folder}/{templates_glob}"
+    full_root_layout_file = f"{full_templates_folder}/{root_layout_file}"
+    full_livetw_folder = f"{full_static_folder}/{livetw_folder}"
+
     return Config(
         flask_root=flask_root,
         static_folder=static_folder,
@@ -401,19 +410,22 @@ def ask_project_layout(app_source: str | None = None) -> Config:
         templates_folder=templates_folder,
         full_templates_folder=full_templates_folder,
         templates_glob=templates_glob,
-        full_templates_glob=f"{full_templates_folder}/{templates_glob}",
+        full_templates_glob=full_templates_glob,
         root_layout_file=root_layout_file,
-        full_root_layout_file=f"{full_templates_folder}/{root_layout_file}",
-        live_reload_file=live_reload_file,
-        full_live_reload_file=f"{full_static_folder}/{live_reload_file}",
-        globalcss_file=globalcss_file,
-        full_globalcss_file=f"{full_static_folder}/{globalcss_file}",
-        tailwind_file=tailwind_file,
-        full_tailwind_file=f"{full_static_folder}/{tailwind_file}",
-        tailwind_minified_file=tailwind_minified_file,
-        full_tailwind_minified_file=f"{full_static_folder}/{tailwind_minified_file}",
+        full_root_layout_file=full_root_layout_file,
+        livetw_folder=livetw_folder,
+        full_livetw_folder=full_livetw_folder,
+        live_reload_file=DEFAULT_FILE_LIVERELOAD,
+        full_live_reload_file=f"{full_livetw_folder}/{DEFAULT_FILE_LIVERELOAD}",
+        globalcss_file=DEFAULT_FILE_GLOBALCSS,
+        full_globalcss_file=f"{full_livetw_folder}/{DEFAULT_FILE_GLOBALCSS}",
+        tailwind_file=DEFAULT_FILE_TAILWIND,
+        full_tailwind_file=f"{full_livetw_folder}/{DEFAULT_FILE_TAILWIND}",
+        production_css_file=DEFAULT_FILE_PRODUCTION_CSS,
+        full_production_css_file=f"{full_static_folder}/{DEFAULT_FILE_PRODUCTION_CSS}",
         live_reload_host=DEFAULT_LIVERELOAD_HOST,
         live_reload_port=DEFAULT_LIVERELOAD_PORT,
+        flask_app=flask_app,
         flask_host=DEFAULT_FLASK_HOST,
         flask_port=DEFAULT_FLASK_PORT,
         flask_exclude_patterns=DEFAULT_FLASK_EXCLUDE_PATTERNS,

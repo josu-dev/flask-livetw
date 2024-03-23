@@ -47,7 +47,7 @@ def build(cli_args: argparse.Namespace) -> int:
 
     build_config = BuildConfig(
         input=cli_args.input or config.full_globalcss_file,
-        output=cli_args.output or config.full_tailwind_minified_file,
+        output=cli_args.output or config.full_production_css_file,
         minify=cli_args.minify,
     )
 

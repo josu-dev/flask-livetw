@@ -10,7 +10,7 @@ from flask_livetw.config import (
     ask_project_layout,
     update_pyproject_toml,
 )
-from flask_livetw.util import Term, load_resource, pkgprint
+from flask_livetw.util import PKG_PP, Term, load_resource, pkgprint
 
 LIVE_RELOAD_SCRIPT = load_resource("live_reload.js")
 TAILWIND_CONFIG = load_resource("tailwind.config.js")
@@ -55,7 +55,7 @@ def generate_live_reload_template(
 ) -> str:
     return (
         """
-  {% if config.DEBUG %}
+  {% if config.LIVETW_DEV %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename=\'"""  # noqa: E501
         + tailwind_file
         + """\') }}">
@@ -186,26 +186,7 @@ def update_layout(
     return 0
 
 
-def update_gitignore(static_folder: str, tailwind_file: str) -> None:
-    Term.blank()
-    pkgprint("Updating .gitignore...")
-
-    content = f"""
-# flask-livetw
-{static_folder}/{tailwind_file}
-"""
-    try:
-        with open(".gitignore", "a") as f:
-            f.write(content)
-    except FileNotFoundError:
-        Term.info("Missing .gitignore file, creating one...")
-        with open(".gitignore", "w") as f:
-            f.write(content)
-
-    pkgprint(".gitignore updated")
-
-
-def initialize(config: Config, gitignore: bool) -> int:
+def initialize(config: Config) -> int:
     Term.blank()
     pkgprint("Initializing flask-livetw 🚀...")
 
@@ -214,6 +195,7 @@ def initialize(config: Config, gitignore: bool) -> int:
     code = update_pyproject_toml(config)
     if code != 0:
         return code
+    pkgprint("pyproject.toml updated")
 
     tailwind_code = configure_tailwind(config.full_templates_glob)
     if tailwind_code > 0:
@@ -226,15 +208,12 @@ def initialize(config: Config, gitignore: bool) -> int:
 
     code = update_layout(
         config.full_root_layout_file,
-        config.live_reload_file,
-        config.tailwind_file,
-        config.tailwind_minified_file,
+        config.livetw_folder + "/" + config.live_reload_file,
+        config.livetw_folder + "/" + config.tailwind_file,
+        config.production_css_file,
     )
     if code != 0:
         return code
-
-    if gitignore:
-        update_gitignore(config.full_static_folder, config.tailwind_file)
 
     Term.blank()
 
@@ -252,7 +231,14 @@ def initialize(config: Config, gitignore: bool) -> int:
 
 
 def init(cli: argparse.Namespace) -> int:
-    # project_config = Config.from_pyproject_toml()
+    project_config = Config.try_from_pyproject_toml()
+    if project_config is not None:
+        overwite = Term.confirm(
+            f"{PKG_PP} flask-livetw is already initialized in this project. Do you want to overwrite the existing configuration?",
+        )
+        if not overwite:
+            pkgprint("Initialization cancelled")
+            return 0
 
     if cli.default:
         init_config = Config.default()
@@ -260,7 +246,7 @@ def init(cli: argparse.Namespace) -> int:
         pkgprint("Describe your project layout:")
         init_config = ask_project_layout()
 
-    return initialize(init_config, gitignore=cli.gitignore)
+    return initialize(init_config)
 
 
 def add_command_args(parser: argparse.ArgumentParser) -> None:
@@ -271,15 +257,6 @@ def add_command_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         default=False,
         help="use default values for all options",
-    )
-
-    parser.add_argument(
-        "--gi",
-        "--gitignore",
-        dest="gitignore",
-        action="store_true",
-        default=False,
-        help="update .gitignore to exclude dev related files",
     )
 
 

@@ -80,6 +80,7 @@ class DevConfig:
     live_reload_port: int
 
     no_flask: bool
+    flask_app: str
     flask_host: str | None
     flask_port: int | None
     flask_mode: str
@@ -131,6 +132,8 @@ async def dev_server(config: DevConfig):
         if config.no_flask:
             return None
 
+        app_arg = f"--app {config.flask_app}"
+
         host_arg = ""
         if config.flask_host is not None:
             host_arg = f"--host {config.flask_host}"
@@ -150,10 +153,12 @@ async def dev_server(config: DevConfig):
         )
 
         cmd = f"\
-            flask run {host_arg} {port_arg} {debug_arg} {exclude_patterns_arg}"
+            flask {app_arg} run {host_arg} {port_arg} {debug_arg} {exclude_patterns_arg}"
 
         process = subprocess.Popen(
-            shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            shlex.split(cmd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
 
         return loop.run_in_executor(pool, handle_flask_output, process)
@@ -198,6 +203,10 @@ def dev(cli_args: argparse.Namespace) -> int:
     )
 
     no_flask = cli_args.no_flask
+    flask_app = (
+        cli_args.flask_app
+        or f"{project_config.flask_root}.{project_config.flask_app or 'app'}"
+    )
     flask_host = cli_args.flask_host or project_config.flask_host
     flask_port = cli_args.flask_port or project_config.flask_port
     flask_mode = cli_args.flask_mode
@@ -220,6 +229,7 @@ def dev(cli_args: argparse.Namespace) -> int:
         live_reload_host=live_reload_host,
         live_reload_port=live_reload_port,
         no_flask=no_flask,
+        flask_app=flask_app,
         flask_host=flask_host,
         flask_port=flask_port,
         flask_mode=flask_mode,
@@ -263,6 +273,13 @@ def add_command_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         default=False,
         help="Disable flask server.",
+    )
+    parser.add_argument(
+        "-fa",
+        "--flask-app",
+        dest="flask_app",
+        type=str,
+        help="Flask entrypoint.",
     )
     parser.add_argument(
         "-fh",

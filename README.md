@@ -91,6 +91,12 @@ By default the command starts:
 
 During development time the enviroment variable `LIVETW_DEV` is set to `TRUE`, `os.environ["LIVETW_DEV"] == "TRUE"`. This is useful for conditional code execution.
 
+When running the flask server separately remember to set the `LIVETW_DEV` to `True` in your flask app configuration to enable the live reload feature.
+
+```py
+app.config["LIVETW_DEV"] = True
+```
+
 ### build
 
 Builds the tailwindcss of the templates as a single css file.
