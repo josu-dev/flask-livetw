@@ -294,6 +294,7 @@ def add_command_args(parser: argparse.ArgumentParser) -> None:
         "-fm",
         "--flask-mode",
         dest="flask_mode",
+        type=str,
         choices=("debug", "no-debug"),
         default="debug",
         help="If debug mode is enabled, the flask server will be started with --debug flag. Default: debug.",
