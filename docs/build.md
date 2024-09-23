@@ -3,6 +3,12 @@
 
 ## Setup
 
+First install the build tools:
+
+```bash
+python -m pip install --upgrade build
+```
+
 To avoid having to copy and paste the token every time you upload, you can create a $HOME/.pypirc file:
 
 ```ini

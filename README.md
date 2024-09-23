@@ -38,7 +38,7 @@ import os
 app.config["LIVETW_DEV"] = os.getenv("LIVETW_ENV") == "development"
 ```
 
-When running the flask server separately during development remember to set the `LIVETW_DEV` to `True` in your flask app configuration to enable the live reload feature.
+When running the flask without `livetw dev` during development remember to set the `LIVETW_DEV` to `True` in your flask app configuration to enable the live reload feature.
 
 ```py
 app.config["LIVETW_DEV"] = True

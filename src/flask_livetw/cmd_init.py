@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
-from typing import Sequence
+import typing as t
 
 from flask_livetw.config import (
     Config,
@@ -289,7 +289,7 @@ def add_command(
     add_command_args(parser)
 
 
-def main(args: Sequence[str] | None = None) -> int:
+def main(args: t.Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Initialize flask-livetw in the current working directory.",
         allow_abbrev=True,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from typing import Sequence
+import typing as t
 
 from flask_livetw import cmd_build, cmd_dev, cmd_init
 
@@ -27,7 +27,7 @@ def create_cli() -> argparse.ArgumentParser:
     return parser
 
 
-def main(args: Sequence[str] | None = None) -> int:
+def main(args: t.Sequence[str] | None = None) -> int:
     parsed_args = create_cli().parse_args(args)
 
     if parsed_args.command == "dev":

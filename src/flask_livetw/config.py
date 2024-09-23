@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import re
-from typing import Any
+import typing as t
 
 import tomli
 
@@ -55,7 +55,7 @@ DEFAULT_CONFIG = {
 }
 
 
-def get_pyproject_toml(base_dir: str | None = None) -> dict[str, Any] | None:
+def get_pyproject_toml(base_dir: str | None = None) -> dict[str, t.Any] | None:
     path = "pyproject.toml"
     if base_dir is not None and base_dir.strip():
         path = f"{base_dir.strip()}/{path}"
@@ -125,14 +125,14 @@ class Config:
 
     @staticmethod
     def from_dict_with_defaults(
-        src_dict: dict[str, Any], base_dir: str | None = None
+        src_dict: dict[str, t.Any], base_dir: str | None = None
     ) -> Config:
         flask_root = src_dict.get("flask_root", DEFAULT_FLASK_ROOT)
         if isinstance(base_dir, str) and base_dir != "":
             base_dir = base_dir.rstrip("/")
             flask_root = f"{base_dir}/{flask_root}"
 
-        config_args: dict[str, Any] = {}
+        config_args: dict[str, t.Any] = {}
         for key in DEFAULT_CONFIG:
             value = src_dict.get(key)
             if value is None or type(value) is not type(DEFAULT_CONFIG[key]):
@@ -183,7 +183,7 @@ class Config:
         if not isinstance(
             config, dict
         ):  # pyright: ignore[reportUnnecessaryIsInstance]
-            config: dict[str, Any] = {}
+            config: dict[str, t.Any] = {}
 
         config = config.get("flask-livetw", {})
         if not isinstance(
@@ -195,10 +195,10 @@ class Config:
 
 
 def add_field(
-    pyproject: dict[str, Any],
+    pyproject: dict[str, t.Any],
     key: str,
     new_config: Config,
-    default: Any,
+    default: t.Any,
     acc: str,
 ) -> str:
     value = pyproject.get(key, getattr(new_config, key))
@@ -214,7 +214,7 @@ def add_field(
 
 def add_toml_field(
     key: str,
-    value: Any,
+    value: t.Any,
     acc: str,
 ) -> str:
     if type(value) is str:

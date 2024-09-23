@@ -1,6 +1,6 @@
 [project]
 name = "flask-livetw"
-version = "0.4.2"
+version = "0.4.3"
 authors = [{ name = "Josue", email = "josue.sa.trabajos@gmail.com" }]
 description = "A simple package that enables live reload and Tailwind CSS for Flask templates."
 readme = "README.md"
@@ -18,7 +18,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 requires-python = ">=3.8"
-dependencies = ["pytailwindcss >= 0.2", "websockets >= 11", "tomli >= 2"]
+dependencies = ["pytailwindcss >= 0.2", "websockets >= 13.1", "tomli >= 2"]
 
 [project.urls]
 repository = "https://github.com/josu-dev/flask-livetw.git"
