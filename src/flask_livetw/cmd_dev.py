@@ -7,50 +7,61 @@ import dataclasses
 import datetime
 import json
 import shlex
+import signal
 import subprocess
-from typing import Sequence, Set
+import sys
+import types
+import typing as t
 
-import websockets.legacy.protocol as ws_protocol
-import websockets.server as ws_server
+import websockets.asyncio.server as ws_server
 
 from flask_livetw.config import Config
 from flask_livetw.util import Term, pkgprint, set_default_env
 
 FLASK_BASE_EXCLUDE_PATTERNS = ("*/**/dev.py",)
 
-LR_CONNECTIONS: Set[ws_server.WebSocketServerProtocol] = set()
+_lr_stop: asyncio.Future[None]
+_lr_connections: t.Set[ws_server.ServerConnection] = set()
+_tw_process: t.Optional[subprocess.Popen[bytes]]
+_fk_process: t.Optional[subprocess.Popen[bytes]]
 
 
-async def handle_connection(websocket: ws_server.WebSocketServerProtocol):
-    LR_CONNECTIONS.add(websocket)
+async def handle_connection(websocket: ws_server.ServerConnection):
+    _lr_connections.add(websocket)
     try:
         await websocket.wait_closed()
     finally:
-        LR_CONNECTIONS.remove(websocket)
+        _lr_connections.remove(websocket)
 
 
 async def live_reload_server(host: str, port: int):
-    async with ws_server.serve(handle_connection, host, port) as server:
+    async with ws_server.serve(handle_connection, host, port):
         pkgprint(
             f"Live reload {Term.G}ready{Term.END} on {Term.C}ws://{host}:{Term.BOLD}{port}{Term.END}"
         )
 
-        await server.wait_closed()
+        await _lr_stop
 
-        pkgprint(f"Live reload {Term.G}closed{Term.END}")
+    if _tw_process is not None:
+        _tw_process.kill()
+    if _fk_process is not None:
+        _fk_process.kill()
 
 
 def handle_tailwind_output(process: subprocess.Popen[bytes]):
     if process.stdout is None:
         return
 
-    for line in iter(process.stdout.readline, b""):
-        if process.poll() is not None:
+    tmpl = f"{Term.C}[twcss]{Term.END} ".encode("utf-8")
+
+    while True:
+        line = process.stdout.readline()
+        if not line or process.poll() is not None:
             break
 
         if line.startswith(b"Done"):
-            ws_protocol.broadcast(
-                LR_CONNECTIONS,
+            ws_server.broadcast(
+                _lr_connections,
                 json.dumps(
                     {
                         "type": "TRIGGER_FULL_RELOAD",
@@ -59,18 +70,46 @@ def handle_tailwind_output(process: subprocess.Popen[bytes]):
                 ),
             )
 
-        print(f'{Term.C}[twcss]{Term.END} {line.decode("utf-8")}', end="")
+        sys.stdout.buffer.write(tmpl + line)
+        sys.stdout.flush()
+
+    if not _lr_stop.done():
+        _lr_stop.set_result(None)
+    if _fk_process is not None:
+        _fk_process.kill()
+    process.kill()
+    process.communicate()
 
 
 def handle_flask_output(process: subprocess.Popen[bytes]):
     if process.stdout is None:
         return
 
-    for line in iter(process.stdout.readline, b""):
-        if process.poll() is not None:
+    tmpl = f"{Term.G}[flask]{Term.END} ".encode("utf-8")
+
+    while True:
+        line = process.stdout.readline()
+        if not line or process.poll() is not None:
             break
 
-        print(f'{Term.G}[flask]{Term.END} {line.decode("utf-8")}', end="")
+        sys.stdout.buffer.write(tmpl + line)
+        sys.stdout.flush()
+
+    if not _lr_stop.done():
+        _lr_stop.set_result(None)
+    if _tw_process is not None:
+        _tw_process.kill()
+    process.kill()
+    process.communicate()
+
+
+def stop_processes(signum: int, frame: t.Union[types.FrameType, None]) -> None:
+    if not _lr_stop.done():
+        _lr_stop.set_result(None)
+    if _tw_process is not None:
+        _tw_process.kill()
+    if _fk_process is not None:
+        _fk_process.kill()
 
 
 @dataclasses.dataclass
@@ -84,7 +123,7 @@ class DevConfig:
     flask_host: str | None
     flask_port: int | None
     flask_mode: str
-    flask_exclude_patterns: Sequence[str] | None
+    flask_exclude_patterns: t.Sequence[str] | None
 
     no_tailwind: bool
     tailwind_input: str | None
@@ -92,7 +131,9 @@ class DevConfig:
     tailwind_minify: bool
 
 
-async def dev_server(config: DevConfig):
+async def dev_server(config: DevConfig) -> int:
+    global _lr_stop
+
     def live_reload_coroutine():
         if config.no_live_reload or config.no_tailwind:
             return None
@@ -118,9 +159,11 @@ async def dev_server(config: DevConfig):
         minify_arg = "--minify" if config.tailwind_minify else ""
 
         cmd = f"tailwindcss --watch {input_arg} {output_arg} {minify_arg}"
-
-        process = subprocess.Popen(
-            shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        global _tw_process
+        _tw_process = process = subprocess.Popen(
+            shlex.split(cmd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
 
         return loop.run_in_executor(pool, handle_tailwind_output, process)
@@ -155,7 +198,8 @@ async def dev_server(config: DevConfig):
         cmd = f"\
             flask {app_arg} run {host_arg} {port_arg} {debug_arg} {exclude_patterns_arg}"
 
-        process = subprocess.Popen(
+        global _fk_process
+        _fk_process = process = subprocess.Popen(
             shlex.split(cmd),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -164,6 +208,7 @@ async def dev_server(config: DevConfig):
         return loop.run_in_executor(pool, handle_flask_output, process)
 
     loop = asyncio.get_running_loop()
+    _lr_stop = asyncio.Future(loop=loop)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         maybe_future_like = (
@@ -178,7 +223,13 @@ async def dev_server(config: DevConfig):
 
         pkgprint("Starting dev server...")
 
-        _ = await asyncio.gather(*futures, return_exceptions=True)
+        results = await asyncio.gather(*futures, return_exceptions=True)
+
+        pkgprint("Exiting dev server...")
+
+    code = 0 if all(result is None for result in results) else 1
+
+    return code
 
 
 def dev(cli_args: argparse.Namespace) -> int:
@@ -190,7 +241,7 @@ def dev(cli_args: argparse.Namespace) -> int:
             "Project config not found. Dev server not started.",
         )
         pkgprint(
-            "Try checking your current working directory or running 'flask-livetw init' to configure the project."
+            "Try checking your current working directory or running 'livetw init' to configure the project."
         )
         return 1
 
@@ -235,8 +286,10 @@ def dev(cli_args: argparse.Namespace) -> int:
         tailwind_minify=tailwind_minify,
     )
 
-    asyncio.run(dev_server(dev_config))
-    return 0
+    signal.signal(signal.SIGINT, stop_processes)
+    signal.signal(signal.SIGTERM, stop_processes)
+
+    return asyncio.run(dev_server(dev_config))
 
 
 def add_command_args(parser: argparse.ArgumentParser) -> None:
@@ -356,7 +409,7 @@ def add_command(
     add_command_args(parser)
 
 
-def main(args: Sequence[str] | None = None) -> int:
+def main(args: t.Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="""
         Extended dev mode for flask apps.

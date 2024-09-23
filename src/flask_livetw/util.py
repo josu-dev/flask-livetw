@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import os
 import platform
-from typing import Callable, Union
+import typing as t
 
 PKG_PPN = "livetw"
 
@@ -76,7 +76,7 @@ class Term:
 
     @staticmethod
     def ask(
-        message: str, validator: Union[None, Callable[[str], bool]] = None
+        message: str, validator: t.Union[None, t.Callable[[str], bool]] = None
     ) -> str:
         while True:
             response = input(message).strip()
@@ -86,7 +86,7 @@ class Term:
             Term.info(f"Invalid response: {response}")
 
     @staticmethod
-    def ask_file(message: str, base_dir: Union[str, None] = None) -> str:
+    def ask_file(message: str, base_dir: t.Union[str, None] = None) -> str:
         file = input(message).strip()
 
         while True:
@@ -105,8 +105,8 @@ class Term:
     @staticmethod
     def ask_dir(
         message: str,
-        base_dir: Union[str, None] = None,
-        default: Union[str, None] = None,
+        base_dir: t.Union[str, None] = None,
+        default: t.Union[str, None] = None,
     ) -> str:
         dir = input(message).strip()
 
