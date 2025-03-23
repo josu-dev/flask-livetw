@@ -12,6 +12,5 @@
   "files.trimTrailingWhitespace": true,
   "flake8.args": [
     "--ignore=E501,W503"
-  ],
-  "python.analysis.typeCheckingMode": "strict"
+  ]
 }

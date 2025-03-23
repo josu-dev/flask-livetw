@@ -1,6 +1,6 @@
 [project]
 name = "flask-livetw"
-version = "0.4.3"
+version = "0.4.4"
 authors = [{ name = "Josue", email = "josue.sa.trabajos@gmail.com" }]
 description = "A simple package that enables live reload and Tailwind CSS for Flask templates."
 readme = "README.md"
@@ -48,3 +48,4 @@ line_length = 79
 
 [tool.pyright]
 reportPrivateUsage = false
+typeCheckingMode = "strict"

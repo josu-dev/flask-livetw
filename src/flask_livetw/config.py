@@ -23,6 +23,8 @@ DEFAULT_FILE_GLOBAL_CSS = "global.css"
 DEFAULT_FILE_DEV_CSS = "tailwind_development.css"
 DEFAULT_FILE_PROD_CSS = "tailwind_production.css"
 
+DEFAULT_TAILWIND_VERSION = "latest"
+
 DEFAULT_LIVE_RELOAD_HOST = "127.0.0.1"
 DEFAULT_LIVE_RELOAD_PORT = 5678
 
@@ -46,6 +48,7 @@ DEFAULT_CONFIG = {
     "global_css": DEFAULT_FILE_GLOBAL_CSS,
     "tailwind_dev": DEFAULT_FILE_DEV_CSS,
     "tailwind_prod": DEFAULT_FILE_PROD_CSS,
+    "tailwind_version": DEFAULT_TAILWIND_VERSION,
     "live_reload": DEFAULT_FILE_LIVE_RELOAD,
     "live_reload_host": DEFAULT_LIVE_RELOAD_HOST,
     "live_reload_port": DEFAULT_LIVE_RELOAD_PORT,
@@ -53,6 +56,8 @@ DEFAULT_CONFIG = {
     "flask_port": DEFAULT_FLASK_PORT,
     "flask_exclude_patterns": DEFAULT_FLASK_EXCLUDE_PATTERNS,
 }
+
+TAILWIND_VERSION_ENV_KEY = "TAILWINDCSS_VERSION"
 
 
 def get_pyproject_toml(base_dir: str | None = None) -> dict[str, t.Any] | None:
@@ -82,6 +87,7 @@ class Config:
     global_css: str
     tailwind_dev: str
     tailwind_prod: str
+    tailwind_version: str
     live_reload: str
     live_reload_host: str
     live_reload_port: int
@@ -335,6 +341,7 @@ def ask_project_layout(app_source: str | None = None) -> Config:
         global_css=DEFAULT_FILE_GLOBAL_CSS,
         tailwind_dev=DEFAULT_FILE_DEV_CSS,
         tailwind_prod=DEFAULT_FILE_PROD_CSS,
+        tailwind_version=DEFAULT_TAILWIND_VERSION,
         live_reload_host=DEFAULT_LIVE_RELOAD_HOST,
         live_reload_port=DEFAULT_LIVE_RELOAD_PORT,
         flask_app=flask_app,
