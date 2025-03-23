@@ -15,7 +15,7 @@ import typing as t
 
 import websockets.asyncio.server as ws_server
 
-from flask_livetw.config import Config
+from flask_livetw.config import TAILWIND_VERSION_ENV_KEY, Config
 from flask_livetw.util import Term, pkgprint, set_default_env
 
 FLASK_BASE_EXCLUDE_PATTERNS = ("*/**/dev.py",)
@@ -129,6 +129,7 @@ class DevConfig:
     tailwind_input: str | None
     tailwind_output: str
     tailwind_minify: bool
+    tailwind_version: str
 
 
 async def dev_server(config: DevConfig) -> int:
@@ -149,6 +150,8 @@ async def dev_server(config: DevConfig) -> int:
     ):
         if config.no_tailwind:
             return None
+
+        set_default_env(TAILWIND_VERSION_ENV_KEY, config.tailwind_version)
 
         input_arg = ""
         if config.tailwind_input is not None:
@@ -269,6 +272,9 @@ def dev(cli_args: argparse.Namespace) -> int:
         cli_args.tailwind_output or project_config.full_tailwind_dev
     )
     tailwind_minify = cli_args.tailwind_minify
+    tailwind_version = (
+        cli_args.tailwind_version or project_config.tailwind_version
+    )
 
     dev_config = DevConfig(
         no_live_reload=no_live_reload,
@@ -284,6 +290,7 @@ def dev(cli_args: argparse.Namespace) -> int:
         tailwind_input=tailwind_input,
         tailwind_output=tailwind_output,
         tailwind_minify=tailwind_minify,
+        tailwind_version=tailwind_version,
     )
 
     signal.signal(signal.SIGINT, stop_processes)
@@ -388,6 +395,13 @@ def add_command_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         default=False,
         help="Enables minification of the generated css file.",
+    )
+    parser.add_argument(
+        "-tv",
+        "--tailwind-version",
+        dest="tailwind_version",
+        type=str,
+        help="Tailwind version to use.",
     )
 
 

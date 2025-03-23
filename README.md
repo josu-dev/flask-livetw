@@ -188,6 +188,12 @@ The production CSS file for the application relative to the `static_folder`.
 
 Default is `"tailwind_production.css"`.
 
+#### tailwind_version
+
+The tailwind version to use.
+
+Default is `"latest"`.
+
 #### live_reload_host
 
 The host for websocket server for the live reload functionality. If set must be manually sync on the live reload script for the client.

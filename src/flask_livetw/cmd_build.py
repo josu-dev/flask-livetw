@@ -6,7 +6,7 @@ import shlex
 import subprocess
 import typing as t
 
-from flask_livetw.config import Config
+from flask_livetw.config import TAILWIND_VERSION_ENV_KEY, Config
 from flask_livetw.util import Term, pkgprint, set_default_env
 
 MINIFY_ON_BUILD = True
@@ -17,9 +17,12 @@ class BuildConfig:
     input: str
     output: str
     minify: bool
+    version: str
 
 
 def minify_tailwind(config: BuildConfig) -> int:
+    set_default_env(TAILWIND_VERSION_ENV_KEY, config.version)
+
     input_arg = f"-i {config.input}"
 
     output_arg = f"-o {config.output}"
@@ -49,6 +52,7 @@ def build(cli_args: argparse.Namespace) -> int:
         input=cli_args.input or config.full_global_css,
         output=cli_args.output or config.full_tailwind_prod,
         minify=cli_args.minify,
+        version=cli_args.version or config.tailwind_version,
     )
 
     return minify_tailwind(build_config)
@@ -74,6 +78,13 @@ def add_command_args(parser: argparse.ArgumentParser) -> None:
         dest="minify",
         action="store_false",
         help="Do not minify output.",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        dest="version",
+        type=str,
+        help="Tailwind version to use.",
     )
     parser.set_defaults(minify=MINIFY_ON_BUILD)
 
